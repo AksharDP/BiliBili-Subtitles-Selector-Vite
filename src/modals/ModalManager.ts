@@ -1,9 +1,10 @@
 // Modal manager for modal state and click-outside behavior
 
 import { showSearchModal } from './SearchModal';
-import { showResultsModal, showSubtitleViewer } from './ResultsModal';
+import { showResultsModal } from './ResultsModal';
 import { showLoginModal } from './LoginModal';
 import { showSettingsModal } from './SettingsModal';
+import { showSubtitleViewer } from './SubtitleViewerModal';
 
 // Track which modal was last active
 export enum ActiveModal {
@@ -42,6 +43,16 @@ function handleDocumentClick(event: MouseEvent): void {
     // Skip if no modal is open
     if (!isModalOpen) return;
     
+    // Skip if we're currently handling back-to-search navigation
+    if (window.isNavigatingBackToSearch) return;
+    
+    // Skip if we have the prevent hiding flag set
+    if (window.localStorage.getItem('preventSearchHiding') === 'true') {
+        // Only clear the flag, don't process the click
+        window.localStorage.removeItem('preventSearchHiding');
+        return;
+    }
+    
     const target = event.target as HTMLElement;
     
     // Get all modal containers
@@ -54,8 +65,9 @@ function handleDocumentClick(event: MouseEvent): void {
     ];
     
     // Check if click is inside any modal
-    const isClickInsideModal = modalContainers.some(container => 
-        container && (container === target || container.contains(target)));
+    const isClickInsideModal = modalContainers.some(container =>
+        container && (container === target || container.contains(target))
+    );
     
     // Check if click is on a control button
     const isClickOnButton = target.closest('#opensubtitles-login-btn') !== null;
@@ -91,6 +103,43 @@ export function hideAllModals(): void {
  * Set the active modal
  */
 export function setActiveModal(modal: ActiveModal, data?: any): void {
+    console.log(`Modal state changing from ${lastActiveModal} to ${modal}`, data); // Debug log
+
+    // Special case: when explicitly navigating back to search from results
+    if (modal === ActiveModal.SEARCH && data?.fromResults) {
+        // Clear results state to prevent returning to results
+        lastSearchPage = 1;
+        lastActiveModal = ActiveModal.SEARCH;
+        isModalOpen = true;
+        
+        // Extra protection against modals closing
+        if (data?.preventHiding) {
+            window.localStorage.setItem('preventSearchHiding', 'true');
+        }
+        
+        // Clear search results if requested
+        if (data?.clearResults) {
+            window.localStorage.setItem('forceSearchModal', 'true');
+        }
+        
+        return;
+    }
+    
+    // Special case for subtitle viewer - if results should remain visible
+    if (modal === ActiveModal.SUBTITLE_VIEWER && data?.resultsVisible) {
+        // Set a compound state - both results and viewer active
+        lastActiveModal = modal;
+        isModalOpen = true;
+        
+        // Store additional context
+        if (data?.subtitleId) {
+            lastViewedSubtitleId = data.subtitleId;
+        }
+        
+        return; // Don't hide other modals
+    }
+    
+    // Standard case - single active modal
     lastActiveModal = modal;
     isModalOpen = modal !== ActiveModal.NONE;
     
@@ -133,6 +182,32 @@ function hideOtherModals(exceptModal: ActiveModal): void {
 export function restoreLastActiveModal(): void {
     isModalOpen = true;
     
+    // Check if we should force the search modal regardless of state
+    const forceSearch = window.localStorage.getItem('forceSearchModal') === 'true';
+    if (forceSearch) {
+        // Clear the flag and show search modal
+        window.localStorage.removeItem('forceSearchModal');
+        showSearchModal();
+        return;
+    }
+    
+    // Check if we need to show both results and subtitle viewer
+    const shouldShowBoth = 
+        lastActiveModal === ActiveModal.SUBTITLE_VIEWER && 
+        lastViewedSubtitleId !== null;
+    
+    if (shouldShowBoth) {
+        // First show the results modal
+        showResultsModal(lastSearchPage);
+        
+        // Then after a small delay (to ensure results modal exists), show the subtitle viewer
+        setTimeout(() => {
+            showSubtitleViewer(lastViewedSubtitleId!);
+        }, 50);
+        return;
+    }
+    
+    // Normal single-modal case
     switch (lastActiveModal) {
         case ActiveModal.LOGIN:
             showLoginModal();
@@ -142,14 +217,6 @@ export function restoreLastActiveModal(): void {
             break;
         case ActiveModal.RESULTS:
             showResultsModal(lastSearchPage);
-            break;
-        case ActiveModal.SUBTITLE_VIEWER:
-            if (lastViewedSubtitleId) {
-                showSubtitleViewer(lastViewedSubtitleId);
-            } else {
-                // Fallback to results if we don't know which subtitle
-                showResultsModal(lastSearchPage);
-            }
             break;
         case ActiveModal.SETTINGS:
             showSettingsModal();
@@ -169,3 +236,10 @@ export {
     lastSearchQuery,
     lastSearchPage
 };
+
+declare global {
+    interface Window {
+        searchFormHideTimeout?: number;
+        isNavigatingBackToSearch?: boolean;
+    }
+}

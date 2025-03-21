@@ -1,7 +1,13 @@
 import { createDiv } from '../ui/components';
 import resultsModalTemplate from '../templates/ResultsModal.html?raw';
-import { getToken, checkSubtitleInCache } from '../db/indexedDB';  // Add checkSubtitleInCache import
+import { getToken, checkSubtitleInCache } from '../db/indexedDB';
+
 import { fetchSubtitleData, downloadSubtitle, fetchSubtitleContent } from '../api/openSubtitles';
+import { 
+    createSubtitleViewer, 
+    showSubtitleViewer, 
+    hideSubtitleViewer 
+} from './SubtitleViewerModal';
 import { 
     applySubtitleToVideo, 
     clearExistingSubtitles 
@@ -18,6 +24,7 @@ declare global {
         subtitleUpdateAnimationFrame: number | null;
         activeCues: any[] | null;
         subtitleSyncOffset: number;
+        searchFormHideTimeout?: number;
     }
 }
 
@@ -62,6 +69,19 @@ export async function createResultsModal(): Promise<void> {
     resultsModal.innerHTML = resultsModalTemplate;
     resultsOverlay.appendChild(resultsModal);
     document.body.appendChild(resultsOverlay);
+    
+    // Prevent clicks on the overlay from closing the modal unintentionally
+    resultsOverlay.addEventListener("click", (e: MouseEvent) => {
+        // Only close if clicking directly on the overlay, not on its children
+        if (e.target === resultsOverlay) {
+            hideResultsModal();
+        }
+    });
+    
+    // Prevent clicks inside the modal from bubbling to the overlay
+    resultsModal.addEventListener("click", (e: MouseEvent) => {
+        e.stopPropagation();
+    });
 
     // Event listeners for controls
     const prevBtn = document.getElementById("os-prev-btn");
@@ -72,25 +92,87 @@ export async function createResultsModal(): Promise<void> {
     if (backBtn) backBtn.addEventListener("click", backToSearch);
 }
 
-// Update this function to accept an optional page parameter
 export function showResultsModal(page?: number): void {
     // If a page is specified and it's valid, set the current page
     if (page && page > 0 && page <= totalPages) {
         currentPage = page;
     }
     
-    // Update summary if results exist
-    if (currentSearchResults.length > 0) {
-        updateResultsSummary();
-        displayCurrentPage();
-    }
+    // COMPLETELY rebuild the results modal structure - more thorough approach
+    const resultsOverlay = document.getElementById("opensubtitles-results-overlay");
     
-    const overlay = document.getElementById("opensubtitles-results-overlay");
-    if (overlay) overlay.style.display = "flex";
+    if (resultsOverlay) {
+        // CRITICAL FIX: Ensure pointer events are enabled on the overlay
+        resultsOverlay.style.pointerEvents = "auto";
+        
+        // First get the reference
+        const oldModal = document.getElementById("opensubtitles-results-modal");
+        if (oldModal) {
+            // Remove the old modal completely
+            resultsOverlay.removeChild(oldModal);
+        }
+        
+        // Create a new modal element from scratch
+        const newResultsModal = document.createElement("div");
+        newResultsModal.id = "opensubtitles-results-modal";
+        newResultsModal.style.cssText = `
+            background-color: white;
+            padding: 0;
+            border-radius: 6px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            width: 500px;
+            max-width: 90%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0 auto;
+            pointer-events: auto;
+        `;
+        
+        // Apply the template HTML
+        newResultsModal.innerHTML = resultsModalTemplate;
+        
+        // Add the new modal to the overlay
+        resultsOverlay.appendChild(newResultsModal);
+        
+        // Prevent clicks inside the modal from bubbling to the overlay
+        newResultsModal.addEventListener("click", (e: MouseEvent) => {
+            e.stopPropagation();
+        });
+        
+        // Attach event listeners to controls
+        const prevBtn = document.getElementById("os-prev-btn");
+        const nextBtn = document.getElementById("os-next-btn");
+        const backBtn = document.getElementById("os-back-search-btn");
+        
+        if (prevBtn) prevBtn.addEventListener("click", () => navigateResults("prev"));
+        if (nextBtn) nextBtn.addEventListener("click", () => navigateResults("next"));
+        if (backBtn) backBtn.addEventListener("click", backToSearch);
+    }
     
     // Hide search modal if it's open
     const searchOverlay = document.getElementById("opensubtitles-search-overlay");
     if (searchOverlay) searchOverlay.style.display = "none";
+    
+    // Show the overlay
+    if (resultsOverlay) resultsOverlay.style.display = "flex";
+    
+    // Update results content if available
+    if (currentSearchResults.length > 0) {
+        updateResultsSummary();
+        displayCurrentPage();
+        
+        // Explicitly ensure the results container has scroll enabled
+        const container = document.getElementById("os-results-container");
+        if (container) {
+            container.style.overflow = "auto";
+            container.style.maxHeight = "calc(80vh - 140px)"; // Account for header and footer
+        }
+    }
+    
+    // Update pagination controls
+    updatePaginationControls();
     
     // Record the active modal state
     setActiveModal(ActiveModal.RESULTS, { page: currentPage });
@@ -104,13 +186,70 @@ export function hideResultsModal(): void {
     hideSubtitleViewer();
 }
 
-// Navigate back to search modal
-export function backToSearch(): void {
-    hideResultsModal();
+// Navigate back to search modal with improved state handling
+function backToSearch(): void {
+    // Clear any hide timeouts
+    if (window.searchFormHideTimeout) {
+        clearTimeout(window.searchFormHideTimeout);
+        delete window.searchFormHideTimeout;
+    }
+    
+    window.isNavigatingBackToSearch = true;
+    
+    // Hide subtitle viewer if visible
+    const subtitleViewerOverlay = document.getElementById("subtitle-viewer-overlay");
+    const viewerContent = document.getElementById("subtitle-viewer-content");
+    if (subtitleViewerOverlay && subtitleViewerOverlay.style.display === "flex") {
+        if (viewerContent) viewerContent.style.opacity = "0";
+        subtitleViewerOverlay.style.display = "none";
+    }
+    
+    // Get the results modal before hiding overlay
+    const resultsModal = document.getElementById("opensubtitles-results-modal");
+    
+    // Hide the results modal
+    const overlay = document.getElementById("opensubtitles-results-overlay");
+    if (overlay) {
+        overlay.style.display = "none";
+        // CRITICAL FIX: Reset pointer events on overlay
+        overlay.style.pointerEvents = "auto";
+    }
+    
+    // Reset results modal positioning and force default width
+    if (resultsModal) {
+        resultsModal.style.position = "";
+        resultsModal.style.left = "";
+        resultsModal.style.top = "";
+        resultsModal.style.transform = "";
+        resultsModal.style.margin = "0 auto"; 
+        resultsModal.style.width = "500px";  // Reset width to default
+        resultsModal.style.zIndex = "";
+        resultsModal.style.transition = "";
+        resultsModal.style.display = "";
+        // CRITICAL FIX: Reset pointer events on results modal
+        resultsModal.style.pointerEvents = "auto";
+    }
+    
+    // Show search modal
     const searchOverlay = document.getElementById("opensubtitles-search-overlay");
     if (searchOverlay) searchOverlay.style.display = "flex";
     
-    setActiveModal(ActiveModal.SEARCH);
+    // Clear search results to prevent auto-showing results modal
+    currentSearchResults = [];
+    
+    // Set flags for forcing search modal next time
+    window.localStorage.setItem('forceSearchModal', 'true');
+    window.localStorage.setItem('preventSearchHiding', 'true');
+    
+    setActiveModal(ActiveModal.SEARCH, { 
+        fromResults: true, 
+        clearResults: true,
+        preventHiding: true 
+    });
+    
+    setTimeout(() => {
+        window.isNavigatingBackToSearch = false;
+    }, 500);
 }
 
 // Navigate between result pages
@@ -282,6 +421,8 @@ async function checkCacheStatus(subtitleId: string, itemElement: HTMLElement): P
 function attachResultButtonListeners(): void {
     document.querySelectorAll(".os-download-btn").forEach(button => {
         button.addEventListener("click", (e: Event) => {
+            e.preventDefault();  // Prevent default behavior
+            e.stopPropagation(); // Stop event bubbling
             const target = e.currentTarget as HTMLElement;
             const subtitleId = target.dataset.subtitleId;
             if (subtitleId) handleSubtitleDownload(subtitleId);
@@ -290,6 +431,8 @@ function attachResultButtonListeners(): void {
     
     document.querySelectorAll(".os-view-btn").forEach(button => {
         button.addEventListener("click", (e: Event) => {
+            e.preventDefault();  // Prevent default behavior
+            e.stopPropagation(); // Stop event bubbling
             const target = e.currentTarget as HTMLElement;
             const subtitleId = target.dataset.subtitleId;
             if (subtitleId) showSubtitleViewer(subtitleId);
@@ -298,64 +441,13 @@ function attachResultButtonListeners(): void {
     
     document.querySelectorAll(".os-save-file-btn").forEach(button => {
         button.addEventListener("click", (e: Event) => {
+            e.preventDefault();  // Prevent default behavior
+            e.stopPropagation(); // Stop event bubbling
             const target = e.currentTarget as HTMLElement;
             const subtitleId = target.dataset.subtitleId;
             if (subtitleId) handleSubtitleSaveToFile(subtitleId);
         });
     });
-}
-
-export function showSubtitleViewer(subtitleId: string): void {
-    createSubtitleViewer(); // Ensure the viewer exists
-    
-    const viewerOverlay = document.getElementById("subtitle-viewer-overlay");
-    const loading = document.getElementById("subtitle-loading");
-    const content = document.getElementById("subtitle-content") as HTMLTextAreaElement;
-    const title = document.getElementById("subtitle-viewer-title");
-    
-    if (viewerOverlay && loading && content && title) {
-        // Show the overlay and loading indicator
-        viewerOverlay.style.display = "flex";
-        loading.style.display = "flex";
-        content.value = ""; // Clear previous content
-        
-        // Record the active modal and subtitle ID
-        setActiveModal(ActiveModal.SUBTITLE_VIEWER, subtitleId);
-        
-        // Fetch the subtitle content based on ID and update the viewer
-        getToken().then(tokenData => {
-            if (!tokenData) {
-                content.value = "Authentication required";
-                loading.style.display = "none";
-                return;
-            }
-            
-            fetchSubtitleContent(tokenData, subtitleId)
-                .then(data => {
-                    if (data) {
-                        title.textContent = data.title || "Subtitle Content";
-                        content.value = data.content || "No content available";
-                        
-                        // Set up copy button
-                        const copyBtn = document.getElementById("subtitle-copy-btn");
-                        if (copyBtn) {
-                            copyBtn.onclick = () => {
-                                content.select();
-                                document.execCommand('copy');
-                                alert("Subtitle content copied to clipboard");
-                            };
-                        }
-                    } else {
-                        content.value = "Failed to load subtitle content";
-                    }
-                    loading.style.display = "none";
-                })
-                .catch(error => {
-                    content.value = `Error: ${error.message || "Failed to load subtitle"}`;
-                    loading.style.display = "none";
-                });
-        });
-    }
 }
 
 async function handleSubtitleDownload(subtitleId: string): Promise<void> {
@@ -400,7 +492,7 @@ async function handleSubtitleDownload(subtitleId: string): Promise<void> {
         }
         
         // Fetch subtitle data
-        const subtitleData = await fetchSubtitleData(tokenData, subtitleId, result);
+        const subtitleData = await fetchSubtitleData(tokenData, subtitleId);
         
         if (!subtitleData) {
             if (button) setDownloadButtonError(button);
@@ -501,6 +593,17 @@ function resetDownloadButton(button: Element): void {
     }
 }
 
+export function updateCacheStatusDisplay(subtitleId: string): void {
+    // Find all result items that might contain this subtitle
+    document.querySelectorAll(`.os-result-item`).forEach(item => {
+        const statusContainer = item.querySelector(`.subtitle-cache-status[data-subtitle-id="${subtitleId}"]`);
+        if (statusContainer) {
+            // Recheck cache status and update the display
+            checkCacheStatus(subtitleId, item as HTMLElement);
+        }
+    });
+}
+
 async function handleSubtitleSaveToFile(subtitleId: string): Promise<void> {
     // Find the result data
     const result = currentSearchResults.find(r => r.id === subtitleId);
@@ -525,7 +628,7 @@ async function handleSubtitleSaveToFile(subtitleId: string): Promise<void> {
         }
         
         // Fetch subtitle data
-        const subtitleData = await fetchSubtitleData(tokenData, subtitleId, result);
+        const subtitleData = await fetchSubtitleData(tokenData, subtitleId);
         
         if (!subtitleData) {
             alert("Failed to get subtitle content");
@@ -535,6 +638,9 @@ async function handleSubtitleSaveToFile(subtitleId: string): Promise<void> {
         
         // Download the file
         downloadSubtitleFile(subtitleData.content, subtitleData.fileName);
+        
+        // Update the cache status display - NEW LINE
+        updateCacheStatusDisplay(subtitleId);
         
         if (button) {
             setDownloadButtonSuccess(button);
@@ -576,19 +682,6 @@ function updatePaginationControls(): void {
     }
 }
 
-// Subtitle viewer functions
-export function createSubtitleViewer(): void {
-    if (document.getElementById("subtitle-viewer-overlay")) return;
-    
-    // Create subtitle viewer elements (implementation omitted for brevity)
-    console.log("Creating subtitle viewer");
-}
-
-export function hideSubtitleViewer(): void {
-    const viewerOverlay = document.getElementById("subtitle-viewer-overlay");
-    if (viewerOverlay) viewerOverlay.style.display = "none";
-}
-
 // Update results with data from search
 export function updateResults(data: any[]): void {
     // Update global state
@@ -605,4 +698,8 @@ export function updateResults(data: any[]): void {
 export function setSearchParams(query: string, params: string): void {
     currentSearchQuery = query;
     currentSearchParams = params;
+}
+
+export function getCurrentSearchResults(): any[] {
+    return currentSearchResults;
 }

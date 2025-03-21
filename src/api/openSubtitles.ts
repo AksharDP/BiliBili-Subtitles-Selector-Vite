@@ -187,6 +187,13 @@ export async function fetchSubtitleContent(tokenData: TokenData, fileId: string)
 }
 
 export async function downloadSubtitle(tokenData: TokenData, fileId: string): Promise<any> {
+    // Check cache first
+    const cachedSubtitle = await getSubtitleFromCache(fileId);
+    if (cachedSubtitle) {
+        console.log(`[Subtitles Selector] Using cached subtitle: ${fileId}`);
+        return cachedSubtitle;
+    }
+
     if (!tokenData?.token) {
         throw new Error("Authentication required");
     }
@@ -196,6 +203,7 @@ export async function downloadSubtitle(tokenData: TokenData, fileId: string): Pr
         : PUBLIC_API_ENDPOINT;
     
     try {
+        // Get download link from API
         const response = await fetch(`${apiEndpoint}/download`, {
             method: 'POST',
             headers: {
@@ -221,7 +229,7 @@ export async function downloadSubtitle(tokenData: TokenData, fileId: string): Pr
     }
 }
 
-export async function fetchSubtitleData(tokenData: TokenData, subtitleId: string, resultData?: any): Promise<any> {
+export async function fetchSubtitleData(tokenData: TokenData, subtitleId: string): Promise<any> {
     // Check cache first
     const cachedSubtitle = await getSubtitleFromCache(subtitleId);
     if (cachedSubtitle) {
@@ -232,37 +240,11 @@ export async function fetchSubtitleData(tokenData: TokenData, subtitleId: string
     if (!tokenData?.token) {
         throw new Error("Authentication required");
     }
-
-    const apiEndpoint = tokenData.base_url?.includes("vip") 
-        ? VIP_API_ENDPOINT 
-        : PUBLIC_API_ENDPOINT;
     
-    // Extract file_id from result data if available
-    const fileId = resultData?.attributes?.files?.[0]?.file_id || resultData?.attributes?.file_id;
-    if (!fileId) {
-        throw new Error("Could not find file_id in subtitle information");
-    }
-
     try {
-        // Step 1: Get download link
-        const response = await fetch(`${apiEndpoint}/download`, {
-            method: 'POST',
-            headers: {
-                'Api-Key': API_KEY,
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${tokenData.token}`,
-                'User-Agent': USER_AGENT
-            },
-            body: JSON.stringify({ file_id: fileId }),
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `API error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const downloadLink = data.link;
+        // Step 1: Get download link from API
+        const downloadData = await downloadSubtitle(tokenData, subtitleId);
+        const downloadLink = downloadData.link;
         
         // Step 2: Download the actual subtitle content
         const contentResponse = await fetch(downloadLink);
@@ -271,14 +253,14 @@ export async function fetchSubtitleData(tokenData: TokenData, subtitleId: string
         }
         
         const content = await contentResponse.text();
-        const fileName = data.file_name || `subtitle_${subtitleId}.srt`;
+        const fileName = downloadData.file_name || `subtitle_${subtitleId}.srt`;
         
         // Create a subtitle data object
         const subtitleData = {
             id: subtitleId,
             content,
             fileName,
-            title: resultData?.attributes?.feature_details?.title || fileName,
+            title: downloadData.file_name,
             timestamp: Date.now()
         };
         

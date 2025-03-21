@@ -163,7 +163,7 @@ function getDefaultSettings(): SettingsData {
     };
 }
 
-export async function saveSettings(settings: SettingsData): Promise<void> {
+export async function saveSettingsToIndexedDB(settings: SettingsData): Promise<void> {
     const db = await openDatabase();
     const transaction = db.transaction([SETTINGS_STORE_NAME], "readwrite");
     const store = transaction.objectStore(SETTINGS_STORE_NAME);
@@ -219,29 +219,29 @@ export async function loadCachedLanguages(): Promise<{ data: any[]; timestamp: n
     });
 }
 
-export async function checkSubtitleInCache(subtitleId: string): Promise<boolean> {
+export async function checkSubtitleInCache(subtitleId: string): Promise<any | null> {
     const db = await openDatabase();
     if (!db) {
-        return false;
+        return null;
     }
-    
+
     try {
         return await new Promise((resolve) => {
-            const transaction = db.transaction(['subtitles'], 'readonly');
-            const subtitlesStore = transaction.objectStore('subtitles');
+            const transaction = db.transaction([SUBTITLES_STORE_NAME], "readonly");
+            const subtitlesStore = transaction.objectStore(SUBTITLES_STORE_NAME);
             const request = subtitlesStore.get(subtitleId);
-            
+
             request.onsuccess = () => {
-                resolve(!!request.result); // Convert to boolean - true if result exists
+                resolve(request.result || null);
             };
-            
+
             request.onerror = (event) => {
-                console.error('Error checking subtitle cache:', event);
-                resolve(false); // Resolve with false on error
+                console.error("Error checking subtitle cache:", event);
+                resolve(null);
             };
         });
     } catch (error) {
-        console.error('Transaction error checking subtitle cache:', error);
-        return false;
+        console.error("Transaction error checking subtitle cache:", error);
+        return null;
     }
 }

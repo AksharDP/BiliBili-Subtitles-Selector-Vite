@@ -1,0 +1,28 @@
+<div id="subtitle-viewer-header" style="padding: 15px 20px; border-bottom: 1px solid #eee; background-color: #f9f9f9; display: flex; justify-content: space-between; align-items: center;">
+    <h2 id="subtitle-viewer-title" style="margin: 0; color: #00a1d6; font-family: Arial, sans-serif; font-size: 18px;">Subtitle Content</h2>
+    <button id="subtitle-viewer-close-btn" style="background: none; border: none; cursor: pointer; padding: 5px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+    </button>
+</div>
+<div id="subtitle-viewer-container" style="flex: 1; overflow-y: auto; padding: 15px 20px; position: relative;">
+    <div id="subtitle-loading" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 2;">
+        <div style="text-align: center;">
+            <div style="border: 4px solid #f3f3f3; border-top: 4px solid #00a1d6; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            <p style="margin-top: 10px; color: #333;">Loading subtitle...</p>
+        </div>
+    </div>
+    <textarea id="subtitle-content" style="width: 100%; height: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 14px; resize: none; white-space: pre; overflow-wrap: normal; overflow-x: auto;"></textarea>
+</div>
+<div id="subtitle-viewer-footer" style="padding: 15px 20px; border-top: 1px solid #eee; background-color: #f9f9f9;">
+    <div style="margin-bottom: 10px;">
+        <p style="font-size: 14px; margin: 0 0 5px 0;">Click on a timestamp to sync with the current video position:</p>
+        <div id="subtitle-sync-status" style="font-size: 12px; color: #666;"></div>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button id="subtitle-sync-auto" style="padding: 8px 15px; background-color: #00a1d6; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif; flex: 1;">Auto-Sync</button>
+        <button id="subtitle-copy-btn" style="padding: 8px 15px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif; flex: 1;">Copy to Clipboard</button>
+    </div>
+</div>

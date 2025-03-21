@@ -334,6 +334,12 @@ declare global {
         subtitleUpdateAnimationFrame: number | null;
         activeCues: any[] | null;
         subtitleSyncOffset: number;
-        subtitleTimestamps: string[];
+        subtitleTimestamps: {
+            startTime: number;
+            endTime: number;
+            startIndex: number;
+            endIndex: number;
+            text: string;
+        }[];
     }
 }

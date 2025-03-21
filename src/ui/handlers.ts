@@ -84,13 +84,6 @@ export async function navigateResults(direction: "prev" | "next"): Promise<void>
     console.log(`Navigate ${direction}`);
 }
 
-export function backToSearch(): void {
-    hideResultsModal();
-    showSearchModal();
-    
-    // Update the active modal state to SEARCH
-    setActiveModal(ActiveModal.SEARCH);
-}
 
 export async function showSubtitleViewer(subtitleId: string): Promise<void> {
     // Implement subtitle viewer logic (assumed truncated in original)

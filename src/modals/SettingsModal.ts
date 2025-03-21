@@ -1,5 +1,5 @@
 import { createDiv } from '../ui/components';
-import { saveSettings, loadSettingsFromIndexedDB, getUserInfoFromDB, getTokenDataFromDB, saveUserInfoToDB} from '../db/indexedDB';
+import { saveSettingsToIndexedDB, loadSettingsFromIndexedDB, getUserInfoFromDB, getTokenDataFromDB, saveUserInfoToDB} from '../db/indexedDB';
 import { getUserInfo } from '../api/openSubtitles';
 import { setActiveModal, ActiveModal } from './ModalManager'
 import settingsModalTemplate from '../templates/settingsModal.html?raw';
@@ -565,7 +565,7 @@ function saveSettingsDebounced(): void {
 async function saveAllSettingsInternal(): Promise<void> {
     const settings = getSettingsFromUI();
     try {
-        await saveSettings(settings);
+        await saveSettingsToIndexedDB(settings);
         // Apply changes to active subtitles
         document.documentElement.style.setProperty('--subtitle-font-size', `${settings.fontSize}px`);
         // We would normally call applySettingsToActiveSubtitles(settings) here
@@ -742,7 +742,7 @@ async function updateFontSize(change: number): Promise<void> {
     }
     
     // Update DB immediately
-    await saveSettings({
+    await saveSettingsToIndexedDB({
         ...settings,
         fontSize: newSize
     });
