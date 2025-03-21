@@ -41,3 +41,10 @@ export interface TokenData {
         remaining_downloads: number;
     };
 }
+
+export interface window {
+    subtitleApplicationInProgress: boolean;
+    subtitleUpdateAnimationFrame: number | null;
+    activeCues: any[] | null;
+    subtitleSyncOffset: number;
+}

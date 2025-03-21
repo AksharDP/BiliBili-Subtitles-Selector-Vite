@@ -1,21 +1,11 @@
 import { createDiv } from '../ui/components';
-import { handleSearchSubmit } from '../ui/handlers';
+import { showSettingsModal } from './SettingsModal';
+import { getLanguages, searchSubtitles } from '../api/openSubtitles';
 import searchModalTemplate from '../templates/searchModal.html?raw';
+import { updatePaginationState, updateResults, showResultsModal, setSearchParams } from './ResultsModal';
+import { getToken } from '../db/indexedDB';
+import { setActiveModal, ActiveModal } from './ModalManager.ts';
 
-// Language codes and names for the language selector
-const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'it', name: 'Italian' },
-    { code: 'pt', name: 'Portuguese' },
-    { code: 'ru', name: 'Russian' },
-    { code: 'ja', name: 'Japanese' },
-    { code: 'zh', name: 'Chinese' },
-    { code: 'ko', name: 'Korean' },
-    // Add more languages as needed
-];
 
 export function createSearchModal(): void {
     const searchOverlay = createDiv("opensubtitles-search-overlay", "", `
@@ -39,31 +29,45 @@ export function createSearchModal(): void {
 }
 
 function setupEventListeners(): void {
-    // Form submission
-    document.getElementById("opensubtitles-search-form")?.addEventListener("submit", (e) => {
-        e.preventDefault();
-        handleSearchSubmit(e);
-    });
+    // Form submission - attach listener to the search form
+    const searchForm = document.getElementById("opensubtitles-search-form");
+    if (searchForm) {
+        searchForm.addEventListener("submit", (e: Event) => {
+            e.preventDefault();
+            handleSearchSubmit(e);
+        });
+    }
     
     // Cancel button
     document.getElementById("os-search-cancel-btn")?.addEventListener("click", hideSearchModal);
     
-    // Settings button
+    // Settings button - dynamically import / call showSettingsModal to avoid circular dependencies
     document.getElementById("os-settings-btn")?.addEventListener("click", () => {
-        // Import dynamically to avoid circular dependencies
-        import('./SettingsModal').then(({ showSettingsModal }) => {
-            showSettingsModal();
-        });
+        showSettingsModal();
     });
     
-    // Search button
+    // Search button - dispatch submit event on form when clicked
     document.getElementById("os-search-submit-btn")?.addEventListener("click", () => {
         const form = document.getElementById("opensubtitles-search-form") as HTMLFormElement;
-        if (form) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        if (form) {
+            form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        }
     });
     
-    // Set up language selector
+    // Set up language selector event listeners
     setupLanguageSelector();
+}
+
+async function fetchLanguages(): Promise<Array<{ code: string; name: string }>> {
+    const result = await getLanguages();
+    if (result && result.data && Array.isArray(result.data)) {
+        return result.data.map((item: any) => ({
+            code: item.language_code,
+            name: item.language_name,
+        }));
+    }
+    // Fallback to English if API call fails
+    return [{ code: 'en', name: 'English' }];
 }
 
 function setupLanguageSelector(): void {
@@ -76,9 +80,10 @@ function setupLanguageSelector(): void {
         // Set default selected language (English)
         addLanguageTag('en', 'English', selectedLanguages, languagesInput);
         
-        // Show dropdown when clicking on the search input
-        languagesSearch.addEventListener("focus", () => {
-            populateLanguagesDropdown(languagesDropdown, selectedLanguages, languagesInput);
+        // When focused, load the languages dynamically
+        languagesSearch.addEventListener("focus", async () => {
+            const langs = await fetchLanguages();
+            populateLanguagesDropdown(languagesDropdown, selectedLanguages, languagesInput, "", langs);
             languagesDropdown.style.display = "block";
         });
         
@@ -90,9 +95,10 @@ function setupLanguageSelector(): void {
         });
         
         // Filter languages when typing in search
-        languagesSearch.addEventListener("input", () => {
+        languagesSearch.addEventListener("input", async () => {
             const searchText = (languagesSearch as HTMLInputElement).value.toLowerCase();
-            populateLanguagesDropdown(languagesDropdown, selectedLanguages, languagesInput, searchText);
+            const langs = await fetchLanguages();
+            populateLanguagesDropdown(languagesDropdown, selectedLanguages, languagesInput, searchText, langs);
         });
     }
 }
@@ -101,15 +107,17 @@ function populateLanguagesDropdown(
     dropdown: HTMLElement, 
     selectedContainer: HTMLElement, 
     input: HTMLInputElement, 
-    searchText: string = ""
+    searchText: string = "",
+    languages: Array<{ code: string; name: string }> = []
 ): void {
+    console.log("[Subtitles Selector] Populating languages dropdown");
     // Clear previous options
     dropdown.innerHTML = "";
     
     // Get currently selected language codes
     const selectedCodes = input.value.split(',').filter(code => code.trim() !== '');
     
-    // Filter languages based on search text
+    // Filter languages based on search text and exclude already selected languages
     const filteredLanguages = languages.filter(lang => 
         lang.name.toLowerCase().includes(searchText) && !selectedCodes.includes(lang.code)
     );
@@ -130,7 +138,6 @@ function populateLanguagesDropdown(
         item.addEventListener("mouseenter", () => {
             item.style.backgroundColor = "#f5f5f5";
         });
-        
         item.addEventListener("mouseleave", () => {
             item.style.backgroundColor = "transparent";
         });
@@ -203,11 +210,8 @@ export function showSearchModal(): void {
     const overlay = document.getElementById("opensubtitles-search-overlay");
     if (overlay) overlay.style.display = "flex";
     
-    // Focus on the search input
-    setTimeout(() => {
-        const searchInput = document.getElementById("os-query") as HTMLInputElement;
-        if (searchInput) searchInput.focus();
-    }, 100);
+    // Update the active modal state
+    setActiveModal(ActiveModal.SEARCH);
 }
 
 export function hideSearchModal(): void {
@@ -219,14 +223,11 @@ export function hideSearchModal(): void {
 export function getSearchFormData(): Record<string, string> {
     const form = document.getElementById("opensubtitles-search-form") as HTMLFormElement;
     if (!form) return {};
-    
     const formData = new FormData(form);
     const data: Record<string, string> = {};
-    
     formData.forEach((value, key) => {
         data[key] = value.toString();
     });
-    
     return data;
 }
 
@@ -236,8 +237,6 @@ export function updateSearchStatus(message: string, isLoading: boolean = true): 
     if (statusElement) {
         statusElement.textContent = message;
         statusElement.style.display = message ? "block" : "none";
-        
-        // Add loading indicator if needed
         if (isLoading && message) {
             statusElement.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: center;">
@@ -269,4 +268,87 @@ export function resetSearchForm(): void {
         languagesInput.value = "en";
         addLanguageTag('en', 'English', selectedLanguages, languagesInput);
     }
+}
+
+export async function handleSearchSubmit(e: Event): Promise<void> {
+    e.preventDefault();
+    const formData = getSearchFormData();
+    
+    try {
+        updateSearchStatus("Searching for subtitles...", true);
+        
+        // Get the authentication token
+        const tokenData = await getToken();
+        if (!tokenData || !tokenData.token) {
+            updateSearchStatus("Authentication required. Please log in.", false);
+            return;
+        }
+        
+        // Build search parameters
+        const params = new URLSearchParams();
+        
+        // Process form data according to API optimization guidelines
+        for (const [key, value] of Object.entries(formData)) {
+            // Skip empty values
+            if (!value || value.trim() === '') continue;
+            
+            // Skip default values
+            if (isDefaultValue(key, value)) continue;
+            
+            let processedValue = value.trim();
+            
+            // Process specific fields according to API guidelines
+            if (key === 'imdb_id' && processedValue.startsWith('tt')) {
+                // Remove 'tt' prefix from IMDB IDs
+                processedValue = processedValue.substring(2);
+            } else if (key.includes('_id') && /^0+\d+$/.test(processedValue)) {
+                // Remove leading zeros from IDs
+                processedValue = processedValue.replace(/^0+/, '');
+            }
+            
+            // Convert value to lowercase (except for languages which are case-sensitive codes)
+            if (key !== 'languages') {
+                processedValue = processedValue.toLowerCase();
+            }
+            
+            // Add to parameters
+            params.append(key, processedValue);
+        }
+        
+        // Debugging output
+        console.log("Search parameters:", Object.fromEntries(params.entries()));
+        
+        // Use the centralized API function
+        try {
+            const data = await searchSubtitles(tokenData, params);
+            console.log(data);
+            // Update the results modal with the actual data
+            setSearchParams(formData.query || 'All', params.toString());
+            updatePaginationState(data, 1);
+            updateResults(data.data || []);
+            showResultsModal();
+            updateSearchStatus("", false);
+        } catch (error: any) {
+            updateSearchStatus(`Error: ${error.message || 'Failed to search subtitles'}`, false);
+        }
+    } catch (error) {
+        console.error("Search error:", error);
+        updateSearchStatus("Error connecting to OpenSubtitles API. Please try again.", false);
+    }
+}
+
+// Helper function to check if a value is a default that should be omitted
+function isDefaultValue(key: string, value: string): boolean {
+    const defaultValues: Record<string, string> = {
+        'ai_translated': 'include',
+        'foreign_parts_only': 'include',
+        'hearing_impaired': 'include',
+        'machine_translated': 'exclude',
+        'moviehash_match': 'include',
+        'trusted_sources': 'include',
+        'type': 'all',
+        'order_direction': 'desc'
+    };
+    
+    return defaultValues[key] === value;
 }

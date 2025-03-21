@@ -1,4 +1,4 @@
-import { DB_NAME, DB_VERSION, STORE_NAME, SUBTITLES_STORE_NAME, SETTINGS_STORE_NAME } from '../utils/constants';
+import { DB_NAME, DB_VERSION, STORE_NAME, SUBTITLES_STORE_NAME, SETTINGS_STORE_NAME, LANGUAGES_STORE_NAME, SUBTITLE_CACHE_SIZE } from '../utils/constants';
 import { TokenData, SubtitleData, SettingsData } from '../types';
 
 export async function openDatabase(): Promise<IDBDatabase> {
@@ -16,6 +16,9 @@ export async function openDatabase(): Promise<IDBDatabase> {
             }
             if (!db.objectStoreNames.contains(SETTINGS_STORE_NAME)) {
                 db.createObjectStore(SETTINGS_STORE_NAME, { keyPath: "id" });
+            }
+            if (!db.objectStoreNames.contains(LANGUAGES_STORE_NAME)) {
+                db.createObjectStore(LANGUAGES_STORE_NAME, { keyPath: "id" });
             }
         };
     });
@@ -40,22 +43,90 @@ export async function getToken(): Promise<TokenData | null> {
     });
 }
 
-export async function storeSubtitle(subtitleData: SubtitleData): Promise<void> {
-    const db = await openDatabase();
-    const transaction = db.transaction([SUBTITLES_STORE_NAME], "readwrite");
-    const store = transaction.objectStore(SUBTITLES_STORE_NAME);
-    store.put(subtitleData);
-    return new Promise((resolve) => transaction.oncomplete = () => resolve());
+export async function storeSubtitle(subtitleData: any): Promise<void> {
+    try {
+        const db = await openDatabase();
+        const transaction = db.transaction([SUBTITLES_STORE_NAME], "readwrite");
+        const store = transaction.objectStore(SUBTITLES_STORE_NAME);
+        
+        // Check cache size
+        const count = await countSubtitlesInCache(store);
+        if (count >= SUBTITLE_CACHE_SIZE) {
+            // Evict oldest subtitles
+            await evictOldestSubtitles(store, count - (SUBTITLE_CACHE_SIZE - 1));
+        }
+        
+        // Store the new subtitle
+        store.put(subtitleData);
+        
+        return new Promise((resolve) => {
+            transaction.oncomplete = () => resolve();
+        });
+    } catch (error) {
+        console.error("Error storing subtitle in cache:", error);
+        throw error;
+    }
 }
 
-export async function getSubtitleFromCache(subtitleId: string): Promise<SubtitleData | null> {
-    const db = await openDatabase();
-    const store = db.transaction([SUBTITLES_STORE_NAME], "readonly").objectStore(SUBTITLES_STORE_NAME);
-    const request = store.get(subtitleId);
-    return new Promise((resolve) => {
-        request.onsuccess = () => resolve(request.result || null);
-        request.onerror = () => resolve(null);
+async function countSubtitlesInCache(store: IDBObjectStore): Promise<number> {
+    return new Promise((resolve, reject) => {
+        const countRequest = store.count();
+        countRequest.onsuccess = () => resolve(countRequest.result);
+        countRequest.onerror = () => reject(countRequest.error);
     });
+}
+
+async function evictOldestSubtitles(store: IDBObjectStore, deleteCount: number): Promise<void> {
+    // Get all subtitles sorted by timestamp
+    const allSubtitles = await getAllSubtitlesSortedByTimestamp(store);
+    
+    // Delete the oldest ones
+    for (let i = 0; i < deleteCount && i < allSubtitles.length; i++) {
+        await deleteSubtitleFromCache(store, allSubtitles[i].id);
+    }
+}
+
+async function getAllSubtitlesSortedByTimestamp(store: IDBObjectStore): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+        const request = store.index("timestamp").openCursor();
+        const subtitles: any[] = [];
+        
+        request.onsuccess = (event) => {
+            const cursor = (event.target as IDBRequest).result;
+            if (cursor) {
+                subtitles.push(cursor.value);
+                cursor.continue();
+            } else {
+                resolve(subtitles);
+            }
+        };
+        
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function deleteSubtitleFromCache(store: IDBObjectStore, subtitleId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const request = store.delete(subtitleId);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+export async function getSubtitleFromCache(subtitleId: string): Promise<any | null> {
+    try {
+        const db = await openDatabase();
+        const store = db.transaction([SUBTITLES_STORE_NAME], "readonly").objectStore(SUBTITLES_STORE_NAME);
+        const request = store.get(subtitleId);
+        
+        return new Promise((resolve, reject) => {
+            request.onsuccess = () => resolve(request.result || null);
+            request.onerror = () => reject(request.error);
+        });
+    } catch (error) {
+        console.error("Error retrieving subtitle from cache:", error);
+        return null;
+    }
 }
 
 export async function storeSettings(settings: SettingsData): Promise<void> {
@@ -104,25 +175,15 @@ export async function saveUserInfoToDB(userData: any): Promise<void> {
     const db = await openDatabase();
     const transaction = db.transaction([SETTINGS_STORE_NAME], "readwrite");
     const store = transaction.objectStore(SETTINGS_STORE_NAME);
-    userData.id = "userInfo";
-    store.put(userData);
+    store.put({ id: "userInfo", ...userData });
     return new Promise((resolve) => transaction.oncomplete = () => resolve());
 }
 
-export async function getUserInfoFromDB(): Promise<TokenData | null> {
+export async function getUserInfoFromDB(): Promise<any | null> {
     const db = await openDatabase();
-    const store = db.transaction([STORE_NAME], "readonly").objectStore(STORE_NAME);
-    const request = store.get("current");
-    return new Promise((resolve) => {
-        request.onsuccess = () => resolve(request.result || null);
-        request.onerror = () => resolve(null);
-    });
-}
-
-export async function getQuotaInfoFromDB(): Promise<TokenData | null> {
-    const db = await openDatabase();
-    const store = db.transaction([STORE_NAME], "readonly").objectStore(STORE_NAME);
-    const request = store.get("current");
+    const transaction = db.transaction([SETTINGS_STORE_NAME], "readonly");
+    const store = transaction.objectStore(SETTINGS_STORE_NAME);
+    const request = store.get("userInfo");
     return new Promise((resolve) => {
         request.onsuccess = () => resolve(request.result || null);
         request.onerror = () => resolve(null);
@@ -137,4 +198,50 @@ export async function getTokenDataFromDB(): Promise<TokenData | null> {
         request.onsuccess = () => resolve(request.result || null);
         request.onerror = () => resolve(null);
     });
+}
+
+export async function storeLanguages(languagesData: { data: any[]; timestamp: number }): Promise<void> {
+    const db = await openDatabase();
+    const transaction = db.transaction([LANGUAGES_STORE_NAME], "readwrite");
+    const store = transaction.objectStore(LANGUAGES_STORE_NAME);
+    store.put({ id: "cachedLanguages", ...languagesData });
+    return new Promise((resolve) => transaction.oncomplete = () => resolve());
+}
+
+export async function loadCachedLanguages(): Promise<{ data: any[]; timestamp: number } | null> {
+    const db = await openDatabase();
+    const transaction = db.transaction([LANGUAGES_STORE_NAME], "readonly");
+    const store = transaction.objectStore(LANGUAGES_STORE_NAME);
+    const request = store.get("cachedLanguages");
+    return new Promise((resolve) => {
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => resolve(null);
+    });
+}
+
+export async function checkSubtitleInCache(subtitleId: string): Promise<boolean> {
+    const db = await openDatabase();
+    if (!db) {
+        return false;
+    }
+    
+    try {
+        return await new Promise((resolve) => {
+            const transaction = db.transaction(['subtitles'], 'readonly');
+            const subtitlesStore = transaction.objectStore('subtitles');
+            const request = subtitlesStore.get(subtitleId);
+            
+            request.onsuccess = () => {
+                resolve(!!request.result); // Convert to boolean - true if result exists
+            };
+            
+            request.onerror = (event) => {
+                console.error('Error checking subtitle cache:', event);
+                resolve(false); // Resolve with false on error
+            };
+        });
+    } catch (error) {
+        console.error('Transaction error checking subtitle cache:', error);
+        return false;
+    }
 }

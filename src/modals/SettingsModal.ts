@@ -1,6 +1,7 @@
 import { createDiv } from '../ui/components';
-import { saveSettings, loadSettingsFromIndexedDB, getUserInfoFromDB, getQuotaInfoFromDB, getTokenDataFromDB, saveUserInfoToDB} from '../db/indexedDB';
+import { saveSettings, loadSettingsFromIndexedDB, getUserInfoFromDB, getTokenDataFromDB, saveUserInfoToDB} from '../db/indexedDB';
 import { getUserInfo } from '../api/openSubtitles';
+import { setActiveModal, ActiveModal } from './ModalManager'
 import settingsModalTemplate from '../templates/settingsModal.html?raw';
 
 // These are moved from global scope in main.user.js to this module
@@ -191,7 +192,6 @@ async function refreshUserInfo(): Promise<void> {
         const userData = await getUserInfo(tokenData);
         if (userData) {
             // Store user data with timestamp
-            userData.timestamp = Date.now();
             await saveUserInfoToDB(userData);
             // Update UI with new data
             updateUserInfoUI(userData);
@@ -243,48 +243,46 @@ async function loadUserInfo(): Promise<void> {
     try {
         // Get user account info
         let userData = await getUserInfoFromDB();
-        
-        // Get quota info if available
-        const quotaInfo = await getQuotaInfoFromDB();
 
         // Update UI with combined data
-        updateUserInfoUI(userData, quotaInfo);
+        updateUserInfoUI(userData);
     } catch (error) {
         console.error("Error loading user info into UI:", error);
         updateUserInfoUIForError("Error loading user information.<br>Please try refreshing.");
     }
 }
 
-function updateUserInfoUI(userData: any, quotaInfo: any = null): void {
-    // Modified account information section layout to be more compact
+function updateUserInfoUI(userData: any): void {
     const userInfoElement = document.getElementById("os-user-info");
+    if (!userData || !userData.data) return updateUserInfoUIForError("No user information found.<br>Please try refreshing.");
+    console.log(userData);
     if (userInfoElement) {
         userInfoElement.innerHTML = `
             <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-family: Arial, sans-serif; font-size: 14px;">
                 <div><strong>Status:</strong></div>
                 <div>
-                    ${userData?.level || "Unknown"} 
+                    ${userData.data.level || "Unknown"} 
                     ${
-                        userData?.vip
+                        userData.data.vip
                             ? '<span id="os-user-vip-badge" style="background-color: #ffc107; color: #000; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">VIP</span>'
                             : ""
                     }
                 </div>
                 
                 <div><strong>Downloads:</strong></div>
-                <div>${userData?.downloads_count || "0"} / ${
-                userData?.allowed_downloads || "0"
-            } (${userData?.remaining_downloads || "0"} remaining)</div>
+                <div>${userData.data.downloads_count || "0"} / ${
+                userData.data.allowed_downloads || "0"
+            } (${userData.data.remaining_downloads || "0"} remaining)</div>
                 
                 <div><strong>Reset Time:</strong></div>
                 <div>${
-                    quotaInfo && quotaInfo.reset_time_utc
-                        ? formatUTCtoLocalTime(quotaInfo.reset_time_utc)
+                    userData.data && userData.data.reset_time_utc
+                        ? formatUTCtoLocalTime(userData.data.reset_time_utc)
                         : "Unknown. Download to show."
                 }</div>
                 
                 <div><strong>Last Update:</strong></div>
-                <div>${userData?.timestamp ? new Date(userData.timestamp).toLocaleString() : "Never"}</div>
+                <div>${userData.timestamp ? new Date(userData.timestamp).toLocaleString() : "Never"}</div>
             </div>
         `;
     }
@@ -606,24 +604,36 @@ function getSettingsFromUI(): any {
         outlineEnabled: (document.getElementById("os-outline-toggle") as HTMLInputElement)?.checked || false,
         outlineColor: currentOutlineColor || "#000000",
         syncOffset: parseFloat((document.getElementById("os-sync-value") as HTMLInputElement)?.value || "0"),
-        animationEnabled: (document.getElementById("os-animation-toggle") as HTMLInputElement)?.checked || true,
+        animationEnabled: (document.getElementById("os-animation-toggle") as HTMLInputElement).checked,
         animationType: (document.getElementById("os-animation-type") as HTMLSelectElement)?.value || "fade",
         animationDuration: parseFloat((document.getElementById("os-animation-duration") as HTMLInputElement)?.value || "0.3")
     };
 }
 
 export async function showSettingsModal(): Promise<void> {
-    const settings = await loadSettingsFromIndexedDB();
+    updateSettingsUI(await loadSettingsFromIndexedDB());
     
-    // Update UI elements with current settings
-    updateSettingsUI(settings);
+    const userInfoElement = document.getElementById("os-user-info");
+    // Check if "Last Update:" displays "Never"
+    if (userInfoElement && !/Last Update:\s*Never/i.test(userInfoElement.textContent || "")) {
+        console.log("[Subtitles Selector] User info already loaded. Skipping update.");
+    } else {
+        console.log("[Subtitles Selector] Loading user info from db");
+        
+        let userData = await getUserInfoFromDB();
+        // If no user info is found, force a refresh from the API
+        if (!userData || !userData.data) {
+            console.log("[Subtitles Selector] No user info found, refreshing...");
+            await refreshUserInfo();
+            userData = await getUserInfoFromDB();
+        }
+        updateUserInfoUI(userData);
+        console.log("[Subtitles Selector] Updated user info");
+    }
     
-    // Load user info
-    loadUserInfo();
-    
-    // Display the modal
     const overlay = document.getElementById("opensubtitles-settings-overlay");
     if (overlay) overlay.style.display = "flex";
+    setActiveModal(ActiveModal.SETTINGS);
 }
 
 // Update UI based on loaded settings
@@ -744,4 +754,5 @@ async function updateFontSize(change: number): Promise<void> {
 export function hideSettingsModal(): void {
     const overlay = document.getElementById("opensubtitles-settings-overlay");
     if (overlay) overlay.style.display = "none";
+    setActiveModal(ActiveModal.SEARCH);
 }

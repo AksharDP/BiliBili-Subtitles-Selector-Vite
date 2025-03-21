@@ -1,10 +1,9 @@
-import { validateToken } from '../api/openSubtitles';
-import { storeToken, getToken } from '../db/indexedDB';
 import { updateButtonToSubtitles } from './components';
+import { hideResultsModal, showResultsModal } from '../modals/ResultsModal';
 import { showLoginModal, hideLoginModal } from '../modals/LoginModal';
-// import { showSearchModal, hideSearchModal } from '../modals/SearchModal';
-import { showResultsModal, hideResultsModal } from '../modals/ResultsModal';
-import { currentSearchResults, currentSearchParams } from '../utils/constants';
+import { getToken, storeToken } from '../db/indexedDB';
+import { checkToken, validateToken } from '../api/openSubtitles';
+import { restoreLastActiveModal, setActiveModal, ActiveModal } from '../modals/ModalManager';
 
 export async function handleLoginSubmit(e: Event): Promise<void> {
     e.preventDefault();
@@ -69,15 +68,14 @@ export async function handleSearchSubmit(e: Event): Promise<void> {
 }
 
 export async function handleButtonClick(): Promise<void> {
-    const tokenData = await getToken();
-    if (tokenData?.token) {
-        if (currentSearchResults.length > 0 && currentSearchParams) {
-            showResultsModal();
-        } else {
-            showSearchModal();
-        }
-    } else {
+    const token = await getToken();
+    
+    if (!token || !(await checkToken(token))) {
+        // User needs to log in
         showLoginModal();
+    } else {
+        // User is logged in, restore last active modal
+        restoreLastActiveModal();
     }
 }
 
@@ -89,6 +87,9 @@ export async function navigateResults(direction: "prev" | "next"): Promise<void>
 export function backToSearch(): void {
     hideResultsModal();
     showSearchModal();
+    
+    // Update the active modal state to SEARCH
+    setActiveModal(ActiveModal.SEARCH);
 }
 
 export async function showSubtitleViewer(subtitleId: string): Promise<void> {
@@ -105,9 +106,4 @@ export function handleSettingsEvents(): void {
     });
     if (saveBtn) saveBtn.addEventListener("click", () => console.log("Save settings"));
     // Add more event listeners as needed
-}
-
-export function showSettingsModal(): void {
-    const overlay = document.getElementById("opensubtitles-settings-overlay");
-    if (overlay) overlay.style.display = "flex";
 }
