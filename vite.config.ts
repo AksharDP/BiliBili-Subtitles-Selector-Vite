@@ -4,6 +4,9 @@ import html from '@rollup/plugin-html';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    open: false
+  },
   plugins: [
     monkey({
       entry: 'src/main.ts',
