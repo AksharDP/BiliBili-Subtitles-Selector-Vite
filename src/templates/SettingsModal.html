@@ -1,0 +1,183 @@
+<div id="os-settings-header" style="padding: 15px 20px; border-bottom: 1px solid #eee; background-color: #f9f9f9; display: flex; justify-content: space-between; align-items: center;">
+    <h2 style="margin: 0; color: #00a1d6; font-family: Arial, sans-serif; font-size: 18px;">Subtitle Settings</h2>
+    <button id="os-settings-close-btn" style="background: none; border: none; cursor: pointer; padding: 5px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+    </button>
+</div>
+<div id="os-settings-container" style="flex: 1; overflow-y: auto; padding: 15px 20px;">
+    <!-- Account section -->
+    <div style="margin-bottom: 20px;">
+        <h3 style="color: #00a1d6; font-family: Arial, sans-serif; font-size: 16px; margin-bottom: 10px;">Account</h3>
+        <div id="os-user-info" style="background-color: #f5f5f5; padding: 12px; border-radius: 4px; margin-bottom: 10px;">
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-family: Arial, sans-serif; font-size: 14px;">
+                <div><strong>Status:</strong></div>
+                <div>
+                    Loading... 
+                    <span id="os-user-vip-badge" style="background-color: #ffc107; color: #000; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 5px; display: none;">VIP</span>
+                </div>
+                
+                <div><strong>Downloads:</strong></div>
+                <div>- / - (- remaining)</div>
+                
+                <div><strong>Reset Time:</strong></div>
+                <div>Unknown. Download to show.</div>
+                
+                <div><strong>Last Update:</strong></div>
+                <div>Never</div>
+            </div>
+        </div>
+        <button id="os-refresh-user-info" style="padding: 8px 12px; background-color: #f0f0f0; color: #666; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; width: 100%;">
+            Refresh Information
+        </button>
+    </div>
+
+    <!-- Font Appearance Section -->
+    <div style="margin-bottom: 20px;">
+        <h3 style="color: #00a1d6; font-family: Arial, sans-serif; font-size: 16px; margin-bottom: 10px;">Font Appearance</h3>
+        
+        <!-- Font Size -->
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-family: Arial, sans-serif; font-size: 14px;">Font Size:</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button id="os-font-size-decrease" style="padding: 5px 10px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 40px;">-</button>
+                <div id="os-font-size-value" style="flex: 1; text-align: center; font-family: Arial, sans-serif; font-size: 14px;">16px</div>
+                <button id="os-font-size-increase" style="padding: 5px 10px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 40px;">+</button>
+            </div>
+        </div>
+        
+        <!-- Font Color -->
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-family: Arial, sans-serif; font-size: 14px;">Font Color:</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                <button class="os-font-color-btn" data-color="#FFFFFF" style="width: 30px; height: 30px; background-color: #FFFFFF; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"></button>
+                <button class="os-font-color-btn" data-color="#FFF000" style="width: 30px; height: 30px; background-color: #FFF000; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"></button>
+                <button class="os-font-color-btn" data-color="#00FF00" style="width: 30px; height: 30px; background-color: #00FF00; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"></button>
+                <button class="os-font-color-btn" data-color="#00FFFF" style="width: 30px; height: 30px; background-color: #00FFFF; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"></button>
+                <button class="os-font-color-btn" data-color="#F08080" style="width: 30px; height: 30px; background-color: #F08080; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"></button>
+                <div id="os-custom-color-container" style="width: 30px; height: 30px; position: relative; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; cursor: pointer;">
+                    <input type="color" id="os-custom-font-color" value="#FFFFFF" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <span style="font-family: Arial, sans-serif; font-size: 14px; margin-right: 4px;">#</span>
+                    <input type="text" id="os-hex-color-input" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; text-transform: uppercase;">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Background Settings Section -->
+    <div style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="color: #00a1d6; font-family: Arial, sans-serif; font-size: 16px; margin: 0;">Background</h3>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 24px;">
+                <input type="checkbox" id="os-bg-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #00a1d6; border-radius: 24px; transition: .4s;">
+                    <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .4s; transform: translateX(26px);"></span>
+                </span>
+            </label>
+        </div>
+        
+        <div id="os-bg-options" style="margin-left: 10px;">
+            <!-- Background Color -->
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-family: Arial, sans-serif; font-size: 14px;">Background Color:</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                    <button class="os-bg-color-btn" data-color="#000000" style="width: 30px; height: 30px; background-color: #000000; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"></button>
+                    <button class="os-bg-color-btn" data-color="#333333" style="width: 30px; height: 30px; background-color: #333333; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"></button>
+                    <button class="os-bg-color-btn" data-color="#0000FF" style="width: 30px; height: 30px; background-color: #0000FF; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"></button>
+                    <button class="os-bg-color-btn" data-color="#008000" style="width: 30px; height: 30px; background-color: #008000; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"></button>
+                    <div id="os-bg-color-container" style="width: 30px; height: 30px; position: relative; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; cursor: pointer;">
+                        <input type="color" id="os-custom-bg-color" value="#000000" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span style="font-family: Arial, sans-serif; font-size: 14px; margin-right: 4px;">#</span>
+                        <input type="text" id="os-bg-hex-color-input" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; text-transform: uppercase;">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Background Opacity -->
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-family: Arial, sans-serif; font-size: 14px;">Background Opacity: <span id="os-bg-opacity-value">0.5</span></label>
+                <input type="range" id="os-bg-opacity" min="0.1" max="1" step="0.1" value="0.5" style="width: 100%; cursor: pointer;">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Outline Settings Section -->
+    <div style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="color: #00a1d6; font-family: Arial, sans-serif; font-size: 16px; margin: 0;">Text Outline</h3>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 24px;">
+                <input type="checkbox" id="os-outline-toggle" style="opacity: 0; width: 0; height: 0;">
+                <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 24px; transition: .4s;">
+                    <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .4s;"></span>
+                </span>
+            </label>
+        </div>
+        
+        <div id="os-outline-options" style="margin-left: 10px; display: none;">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-family: Arial, sans-serif; font-size: 14px;">Outline Color:</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                    <button class="os-outline-color-btn" data-color="#000000" style="width: 30px; height: 30px; background-color: #000000; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"></button>
+                    <button class="os-outline-color-btn" data-color="#FFFFFF" style="width: 30px; height: 30px; background-color: #FFFFFF; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"></button>
+                    <div id="os-outline-color-container" style="width: 30px; height: 30px; position: relative; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; cursor: pointer;">
+                        <input type="color" id="os-custom-outline-color" value="#000000" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span style="font-family: Arial, sans-serif; font-size: 14px; margin-right: 4px;">#</span>
+                        <input type="text" id="os-outline-hex-color-input" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; text-transform: uppercase;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Timing Settings Section -->
+    <div style="margin-bottom: 20px;">
+        <h3 style="color: #00a1d6; font-family: Arial, sans-serif; font-size: 16px; margin-bottom: 10px;">Sync Adjustment</h3>
+        <div style="margin-bottom: 5px;">
+            <label style="display: block; margin-bottom: 5px; font-family: Arial, sans-serif; font-size: 14px;">Timing Offset (seconds):</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="range" id="os-sync-slider" min="-30" max="30" step="0.1" value="0" style="flex: 1; cursor: pointer;">
+                <input type="number" id="os-sync-value" min="-30" max="30" step="0.1" value="0" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                <button id="os-sync-reset" style="padding: 5px 10px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Reset</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Animation Settings Section -->
+    <div style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="color: #00a1d6; font-family: Arial, sans-serif; font-size: 16px; margin: 0;">Animation</h3>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 24px;">
+                <input type="checkbox" id="os-animation-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #00a1d6; border-radius: 24px; transition: .4s;">
+                    <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .4s; transform: translateX(26px);"></span>
+                </span>
+            </label>
+        </div>
+        <div id="os-animation-options" style="margin-left: 10px;">
+            <div style="margin-bottom: 10px;">
+                <label style="display: block; margin-bottom: 5px; font-family: Arial, sans-serif; font-size: 14px;">Animation Type:</label>
+                <select id="os-animation-type" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="fade">Fade</option>
+                    <option value="slideUp">Slide Up</option>
+                    <option value="slideDown">Slide Down</option>
+                    <option value="zoom">Zoom</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label style="display: block; margin-bottom: 5px; font-family: Arial, sans-serif; font-size: 14px;">Animation Duration: <span id="os-animation-duration-value">0.3s</span></label>
+                <input type="range" id="os-animation-duration" min="0.1" max="1" step="0.1" value="0.3" style="width: 100%; cursor: pointer;">
+            </div>
+        </div>
+    </div>
+</div>
+<div id="os-settings-footer" style="padding: 15px 20px; border-top: 1px solid #eee; background-color: #f9f9f9; text-align: right;">
+    <button id="os-settings-save-btn" style="padding: 8px 15px; background-color: #00a1d6; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">Save Settings</button>
+</div>

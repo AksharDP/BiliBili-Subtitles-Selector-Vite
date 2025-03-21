@@ -1,0 +1,13 @@
+<h2 style="margin-top: 0; color: #00a1d6; font-family: Arial, sans-serif;">OpenSubtitles Login</h2>
+<form id="opensubtitles-login-form">
+    <div style="margin-bottom: 15px;">
+        <label for="token" style="display: block; margin-bottom: 5px; font-family: Arial, sans-serif;">API Token:</label>
+        <input type="text" id="os-token" name="token" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px;" required>
+        <p style="font-size: 12px; color: #666; margin-top: 5px;">You can find your API token in your <a href="https://www.opensubtitles.com/en/users/profile" target="_blank">OpenSubtitles account settings</a>.</p>
+    </div>
+    <div style="display: flex; justify-content: space-between;">
+        <button type="submit" style="padding: 8px 15px; background-color: #00a1d6; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">Login</button>
+        <button type="button" id="os-cancel-btn" style="padding: 8px 15px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">Cancel</button>
+    </div>
+    <div id="os-login-status" style="margin-top: 15px; color: #e74c3c; display: none;"></div>
+</form>
