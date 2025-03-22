@@ -79,7 +79,7 @@ export function createSubtitleViewer(): void {
     // Add event listeners
     document.getElementById("subtitle-viewer-close-btn")?.addEventListener("click", hideSubtitleViewer);
     document.getElementById("subtitle-copy-btn")?.addEventListener("click", copySubtitleToClipboard);
-    document.getElementById("subtitle-sync-auto")?.addEventListener("click", autoSyncSubtitles);
+    document.getElementById("subtitle-sync")?.addEventListener("click", autoSyncSubtitles);
     
     // Add click handler for timestamps in textarea
     document.getElementById("subtitle-content")?.addEventListener("click", handleTimestampClick);
@@ -452,12 +452,41 @@ function getTextareaClickPosition(textarea: HTMLTextAreaElement, e: MouseEvent):
  * Auto sync with current video position
  */
 function autoSyncSubtitles(): void {
+    const textarea = document.getElementById("subtitle-content") as HTMLTextAreaElement;
+    if (!textarea) {
+        const syncStatus = document.getElementById("subtitle-sync-status");
+        if (syncStatus) {
+            syncStatus.textContent = "No subtitle content element found.";
+        }
+        return;
+    }
+    
+    // Get the current cursor position in the textarea
+    const cursorPos = textarea.selectionStart;
+    if (cursorPos === null || isNaN(cursorPos)) {
+        const syncStatus = document.getElementById("subtitle-sync-status");
+        if (syncStatus) {
+            syncStatus.textContent = "Unable to determine cursor position.";
+        }
+        return;
+    }
+    
     if (!window.subtitleTimestamps?.length) {
         const syncStatus = document.getElementById("subtitle-sync-status");
         if (syncStatus) {
-            syncStatus.textContent = "No timestamps found for syncing";
+            syncStatus.textContent = "No timestamps found for syncing.";
         }
         return;
+    }
+    
+    // Try to find a timestamp that covers the cursor position
+    let selectedTimestamp = window.subtitleTimestamps.find(ts => cursorPos >= ts.startIndex && cursorPos <= ts.endIndex);
+    
+    // If not found, find the closest timestamp based on startIndex
+    if (!selectedTimestamp) {
+        selectedTimestamp = window.subtitleTimestamps.reduce((prev, curr) => {
+            return (Math.abs(cursorPos - prev.startIndex) <= Math.abs(cursorPos - curr.startIndex)) ? prev : curr;
+        });
     }
     
     const videoPlayer = document.querySelector('video');
@@ -471,23 +500,10 @@ function autoSyncSubtitles(): void {
     
     const currentVideoTime = videoPlayer.currentTime;
     
-    // Find closest timestamp to current video position
-    let closestTimestamp = window.subtitleTimestamps[0];
-    let minDifference = Math.abs(currentVideoTime - closestTimestamp.startTime);
-    
-    for (const timestamp of window.subtitleTimestamps) {
-        const difference = Math.abs(currentVideoTime - timestamp.startTime);
-        if (difference < minDifference) {
-            minDifference = difference;
-            closestTimestamp = timestamp;
-        }
-    }
-    
-    // Calculate and apply offset
-    const offset = currentVideoTime - closestTimestamp.startTime;
+    // Calculate the offset from the timestamp time to the current video time
+    const offset = currentVideoTime - selectedTimestamp.startTime;
     window.subtitleSyncOffset = offset;
     
-    // Update settings
     loadSettingsFromIndexedDB().then(settings => {
         settings.syncOffset = offset;
         saveSettingsToIndexedDB(settings);
@@ -495,7 +511,7 @@ function autoSyncSubtitles(): void {
         // Update UI
         const syncStatus = document.getElementById("subtitle-sync-status");
         if (syncStatus) {
-            syncStatus.textContent = `Auto-synced! Offset: ${offset.toFixed(2)}s`;
+            syncStatus.textContent = `Cursor sync applied! Offset: ${offset.toFixed(2)}s`;
         }
         
         // Refresh subtitle display
