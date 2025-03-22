@@ -60,12 +60,6 @@ function hideSearchModal(): void {
     if (overlay) overlay.style.display = "none";
 }
 
-export async function handleSearchSubmit(e: Event): Promise<void> {
-    e.preventDefault();
-    // Implement search logic here (assumed truncated in original)
-    hideSearchModal();
-    showResultsModal();
-}
 
 export async function handleButtonClick(): Promise<void> {
     const token = await getToken();
@@ -85,10 +79,6 @@ export async function navigateResults(direction: "prev" | "next"): Promise<void>
 }
 
 
-export async function showSubtitleViewer(subtitleId: string): Promise<void> {
-    // Implement subtitle viewer logic (assumed truncated in original)
-    console.log(`Showing subtitle viewer for ID: ${subtitleId}`);
-}
 
 export function handleSettingsEvents(): void {
     const closeBtn = document.getElementById("os-settings-close-btn");
