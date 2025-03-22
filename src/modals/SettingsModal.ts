@@ -8,6 +8,8 @@ import settingsModalTemplate from '../templates/settingsModal.html?raw';
 let currentFontColor = "#FFFFFF";
 let currentOutlineColor = "#000000";
 let currentBgColor = "#000000";
+let currentAnimationType = "fade";
+let currentAnimationDuration = 0.3;
 
 export function createSettingsModal(): void {
     const settingsOverlay = createDiv("opensubtitles-settings-overlay", "", `
@@ -405,16 +407,17 @@ function handleOutlineColorPickerInput(e: Event): void {
 // Handle sync value input
 function handleSyncValueInput(e: Event): void {
     const target = e.target as HTMLInputElement;
-    const value = parseFloat(target.value);
-    if (value >= -30 && value <= 30) {
-        (document.getElementById("os-sync-slider") as HTMLInputElement).value = target.value;
-    } else if (value < -30) {
-        target.value = "-30";
-        (document.getElementById("os-sync-slider") as HTMLInputElement).value = "-30";
-    } else if (value > 30) {
-        target.value = "30";
-        (document.getElementById("os-sync-slider") as HTMLInputElement).value = "30";
-    }
+    // const value = parseFloat(target.value);
+    // if (value >= -30 && value <= 30) {
+    //     (document.getElementById("os-sync-slider") as HTMLInputElement).value = target.value;
+    // } else if (value < -30) {
+    //     target.value = "-30";
+    //     (document.getElementById("os-sync-slider") as HTMLInputElement).value = "-30";
+    // } else if (value > 30) {
+    //     target.value = "30";
+    //     (document.getElementById("os-sync-slider") as HTMLInputElement).value = "30";
+    // }
+    (document.getElementById("os-sync-slider") as HTMLInputElement).value = target.value;
     saveSettingsDebounced();
 }
 
@@ -563,12 +566,31 @@ function saveSettingsDebounced(): void {
 }
 
 async function saveAllSettingsInternal(): Promise<void> {
+    // Get settings from the UI
     const settings = getSettingsFromUI();
+    
+    // Update global variables with the new settings
+    currentFontColor = settings.fontColor;
+    currentOutlineColor = settings.outlineColor;
+    currentBgColor = settings.bgColor;
+    (window as any).subtitleSyncOffset = settings.syncOffset;
+    
+    // Update global animation properties
+    currentAnimationType = settings.animationType;
+    currentAnimationDuration = settings.animationDuration;
+    
     try {
+        // Save settings to IndexedDB
         await saveSettingsToIndexedDB(settings);
-        // Apply changes to active subtitles
+        
+        // Apply changes to active subtitles (e.g. update a CSS variable)
         document.documentElement.style.setProperty('--subtitle-font-size', `${settings.fontSize}px`);
-        // We would normally call applySettingsToActiveSubtitles(settings) here
+        // Also update global CSS variables for animation type and duration if used in your styles
+        document.documentElement.style.setProperty('--subtitle-animation-type', settings.animationType);
+        document.documentElement.style.setProperty('--subtitle-animation-duration', `${settings.animationDuration}s`);
+        
+        // (Optional) Call a function to update any active subtitle overlays immediately
+        // applySettingsToActiveSubtitles(settings);
     } catch (error) {
         console.error('Error saving settings:', error);
     }
