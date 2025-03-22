@@ -192,26 +192,24 @@ export function restoreLastActiveModal(): void {
     }
     
     // Check if we need to show both results and subtitle viewer
-    const showBoth = 
-        lastActiveModal === ActiveModal.SUBTITLE_VIEWER && 
-        lastViewedSubtitleId !== null;
-    
+    const showBoth = lastActiveModal === ActiveModal.SUBTITLE_VIEWER && lastViewedSubtitleId !== null;
     if (showBoth) {
         // First show the results modal
         showResultsModal(lastSearchPage);
-
-        // get the result element is associated with the subtitleId
-        // first get os-result-item with the property data-subtitle-id to be equal to lastviewedsubtitleid
-        // then get the parent element of the result item
-        const resultBtn = document.querySelector(`.os-result-item[data-subtitle-id="${lastViewedSubtitleId}"]`) as HTMLElement;
-        const resultItem = resultBtn.closest('.os-result-item');
         
-        if (resultItem) {
-            // Then after a small delay (to ensure results modal exists), show the subtitle viewer
-            setTimeout(() => {
-                showSubtitleViewer(resultItem as HTMLElement);
-            }, 50);
-        }        
+        // Attempt to get the result element associated with the last viewed subtitle
+        const resultBtn = document.querySelector(`.os-result-item[data-subtitle-id="${lastViewedSubtitleId}"]`) as HTMLElement | null;
+        if (resultBtn) {
+            const resultItem = resultBtn.closest('.os-result-item');
+            if (resultItem) {
+                // After a small delay to ensure the results modal exists, show the subtitle viewer
+                setTimeout(() => {
+                    showSubtitleViewer(resultItem as HTMLElement);
+                }, 50);
+                return;
+            }
+        }
+        // If no result element is found, fall back to showing the results modal
         return;
     }
     
