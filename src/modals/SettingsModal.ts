@@ -733,22 +733,24 @@ function updateSettingsUI(settings: any): void {
 async function updateFontSize(change: number): Promise<void> {
     const settings = await loadSettingsFromIndexedDB();
     const currentSize = settings?.fontSize || 16;
-    const newSize = Math.max(8, Math.min(32, currentSize + change)); // Limit between 8-32px
-    
-    // Update UI
+    const newSize = Math.max(8, Math.min(32, currentSize + change)); // Limit font size between 8-32px
+
+    // Update the font size display in the settings modal for feedback
     const fontSizeValue = document.getElementById("os-font-size-value");
     if (fontSizeValue) {
         fontSizeValue.textContent = `${newSize}px`;
     }
-    
-    // Update DB immediately
+
+    // Update stored settings immediately
     await saveSettingsToIndexedDB({
         ...settings,
         fontSize: newSize
     });
-    
-    // Apply the change immediately
-    document.documentElement.style.setProperty('--subtitle-font-size', `${newSize}px`);
+
+    // Apply the change to the subtitle elements (instead of the modal styles)
+    document.querySelectorAll(".subtitle").forEach(subtitle => {
+        (subtitle as HTMLElement).style.fontSize = `${newSize}px`;
+    });
 }
 
 export function hideSettingsModal(): void {
