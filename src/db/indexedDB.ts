@@ -219,26 +219,18 @@ export async function loadCachedLanguages(): Promise<{ data: any[]; timestamp: n
     });
 }
 
-export async function checkSubtitleInCache(subtitleId: string): Promise<any | null> {
-    const db = await openDatabase();
-    if (!db) {
-        return null;
-    }
-
+export async function checkSubtitleInCache(subtitleId: string): Promise<SubtitleData | null> {
     try {
-        return await new Promise((resolve) => {
-            const transaction = db.transaction([SUBTITLES_STORE_NAME], "readonly");
-            const subtitlesStore = transaction.objectStore(SUBTITLES_STORE_NAME);
-            const request = subtitlesStore.get(subtitleId);
+        const db = await openDatabase();
+        const transaction = db.transaction([SUBTITLES_STORE_NAME], "readonly");
+        const store = transaction.objectStore(SUBTITLES_STORE_NAME);
+        const request = store.get(subtitleId);
 
+        return new Promise((resolve, reject) => {
             request.onsuccess = () => {
-                resolve(request.result || null);
+                resolve(request.result ? request.result as SubtitleData : null);
             };
-
-            request.onerror = (event) => {
-                console.error("Error checking subtitle cache:", event);
-                resolve(null);
-            };
+            request.onerror = () => reject(request.error);
         });
     } catch (error) {
         console.error("Transaction error checking subtitle cache:", error);

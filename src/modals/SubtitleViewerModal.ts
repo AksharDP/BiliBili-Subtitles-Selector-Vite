@@ -107,7 +107,13 @@ export function createSubtitleViewer(): void {
 /**
  * Show the subtitle viewer with content for the specified subtitle
  */
-export function showSubtitleViewer(subtitleId: string): void {
+export function showSubtitleViewer(resultElement: HTMLElement): void {
+    const osViewBtn = resultElement.querySelector('.os-view-btn') as HTMLElement;
+    const subtitleId = osViewBtn?.dataset.subtitleId || '';
+    if (!subtitleId) {
+        console.error("Invalid subtitle ID:", subtitleId);
+        return;
+    }
     // Check if already showing this subtitle to prevent recursion
     const currentViewer = document.getElementById("subtitle-viewer-overlay");
     if (currentViewer && currentViewer.style.display === "flex" && 
@@ -197,7 +203,7 @@ export function showSubtitleViewer(subtitleId: string): void {
         // Load subtitle content
         loadSubtitleContent(subtitleId)
             .then(data => {
-                console.log("Subtitle data loaded:", !!data); // Debug log with boolean to avoid flooding console
+                console.log("Subtitle data loaded:", !!data);
                 console.log(data);
                 if (data && data.content) {
                     // Display the subtitle content
@@ -213,13 +219,19 @@ export function showSubtitleViewer(subtitleId: string): void {
                     if (syncStatus) {
                         syncStatus.textContent = `Found ${timestamps.length} timestamps. Click any timestamp to sync with video.`;
                     }
+
+                    // Turn the indicator green if not already green
+                    const indicator = document.getElementById("subtitle-cache-indicator");
+                    if (indicator && indicator.style.backgroundColor !== "green") {
+                        indicator.style.backgroundColor = "green";
+                    }
                 } else {
                     // Detailed error when content isn't available
                     content.value = `No subtitle content found.\n\nData object: ${typeof data}\nHas content: ${!!(data && data.content)}\n\n${JSON.stringify(data, null, 2)}`;
                 }
             })
             .catch(error => {
-                console.error("Error loading subtitle:", error); // More detailed error logging
+                console.error("Error loading subtitle:", error);
                 content.value = `Error: ${error.message || "Failed to load subtitle"}`;
             })
             .finally(() => {

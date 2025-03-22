@@ -145,7 +145,7 @@ function setupSettingsEventListeners(): void {
     });
 
     // Refresh user info button
-    document.getElementById("os-refresh-user-info")?.addEventListener("click", refreshUserInfo);
+    document.getElementById("os-refresh-user-info")?.addEventListener("click", () => refreshUserInfo(true));
 
     // Save button
     document.getElementById("os-settings-save-btn")?.addEventListener("click", saveAllSettings);
@@ -173,9 +173,9 @@ function formatUTCtoLocalTime(utcTimeString: string): string {
     }
 }
 
-async function refreshUserInfo(): Promise<void> {
+async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
     const refreshBtn = document.getElementById("os-refresh-user-info") as HTMLButtonElement;
-    if (refreshBtn) {
+    if (refreshBtn && showRefreshedIndicator) {
         // Set button to loading state
         refreshBtn.textContent = "Refreshing...";
         refreshBtn.disabled = true;
@@ -197,7 +197,7 @@ async function refreshUserInfo(): Promise<void> {
             updateUserInfoUI(userData);
             
             // Show success state
-            if (refreshBtn) {
+            if (refreshBtn && showRefreshedIndicator) {
                 refreshBtn.textContent = "Updated!";
                 refreshBtn.style.backgroundColor = "#e8f5e9";
                 refreshBtn.style.color = "#2e7d32";
@@ -624,7 +624,7 @@ export async function showSettingsModal(): Promise<void> {
         // If no user info is found, force a refresh from the API
         if (!userData || !userData.data) {
             console.log("[Subtitles Selector] No user info found, refreshing...");
-            await refreshUserInfo();
+            await refreshUserInfo(false);
             userData = await getUserInfoFromDB();
         }
         updateUserInfoUI(userData);

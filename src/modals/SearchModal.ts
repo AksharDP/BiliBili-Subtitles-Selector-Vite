@@ -53,7 +53,22 @@ function setupEventListeners(): void {
             form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
         }
     });
-    
+
+    // Now add a keydown listener to every input in the search modal
+    const searchModal = document.getElementById("opensubtitles-search-modal");
+    if (searchModal) {
+        const inputs = searchModal.querySelectorAll("input");
+        inputs.forEach(input => {
+            input.addEventListener("keydown", (e: KeyboardEvent) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    // Simulate clicking the search button
+                    document.getElementById("os-search-submit-btn")?.click();
+                }
+            });
+        });
+    }
+
     // Set up language selector event listeners
     setupLanguageSelector();
 }
@@ -321,11 +336,17 @@ export async function handleSearchSubmit(e: Event): Promise<void> {
         // Use the centralized API function
         try {
             const data = await searchSubtitles(tokenData, params);
-            console.log(data);
-            // Update the results modal with the actual data
+            
+            // First set search parameters
             setSearchParams(formData.query || 'All', params.toString());
+            
+            // Then update pagination state from API response
             updatePaginationState(data, 1);
+            
+            // Finally update results array (this now preserves pagination)
             updateResults(data.data || []);
+            
+            // Show the results modal
             showResultsModal();
             updateSearchStatus("", false);
         } catch (error: any) {

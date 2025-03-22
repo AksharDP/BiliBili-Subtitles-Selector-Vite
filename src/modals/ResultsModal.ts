@@ -290,9 +290,9 @@ function updateResultsSummary(): void {
     }
     
     summaryElement.innerHTML = `
-        <strong>Search:</strong> ${currentSearchQuery || "All"}  
-        <strong>Languages:</strong> ${languageValue}  
-        <strong>Results:</strong> ${totalCount}
+        <strong style="margin-right: 2px">Search:</strong> ${currentSearchQuery || "All"}  
+        <strong style="margin-left: 10px; margin-right: 2px">Languages:</strong> ${languageValue}  
+        <strong style="margin-left: 10px; margin-right: 2px">Results:</strong> ${totalCount}
     `;
 }
 
@@ -317,10 +317,11 @@ async function displayCurrentPage(): Promise<void> {
     const resultsList = document.createElement("div");
     resultsList.style.cssText = "display: flex; flex-direction: column; gap: 10px; width: 100%;";
     
-    currentSearchResults.forEach((result, index) => {
-        const resultItem = createResultItem(result, index);
+    for (let index = 0; index < currentSearchResults.length; index++) {
+        const result = currentSearchResults[index];
+        const resultItem = await createResultItem(result, index);
         resultsList.appendChild(resultItem);
-    });
+    }
     
     container.appendChild(resultsList);
     
@@ -329,35 +330,28 @@ async function displayCurrentPage(): Promise<void> {
 }
 
 // Create a result item element
-function createResultItem(result: any, index: number): HTMLElement {
+async function createResultItem(result: any, index: number): Promise<HTMLElement> {
     const item = document.createElement("div");
     item.className = "os-result-item";
     item.dataset.index = index.toString();
     item.style.cssText = "padding: 15px; background-color: #f9f9f9; border-radius: 4px; margin-bottom: 10px;";
     
-    // Extract the right fields from the response
     const attributes = result.attributes || {};
-    const files = attributes.files && attributes.files.length > 0 ? attributes.files[0] : {};
+    // Ensure fileId is stored as a string to match what is used in the database.
+    const file = attributes.files && attributes.files.length > 0 ? attributes.files[0] : {};
+    const fileId = file.file_id ? file.file_id.toString() : "";
     
     const title = attributes.feature_details?.title || attributes.release || "Untitled";
     const language = attributes.language || "Unknown";
-    
-    // Format detection removed from display.
     const downloads = attributes.download_count || 0;
-    const year = attributes.feature_details?.year || attributes.year || "";
-    
-    // Get release name or filename (can be very long)
+    const year = attributes.feature_details?.year || "";
     const releaseInfo = attributes.release || attributes.filename || "";
     
-    // Check cache status (initially unknown)
-    const cacheStatus = `
-        <div class="subtitle-cache-status" data-subtitle-id="${result.id}" style="display: inline-flex; align-items: center; margin-right: 8px;">
-            <span class="cache-indicator" style="width: 8px; height: 8px; border-radius: 50%; background-color: #ccc; margin-right: 4px;"></span>
-            <span class="cache-text" style="font-size: 12px; color: #777;">checking...</span>
-        </div>
-    `;
+    // Wait for the cache check to complete before rendering the cache status
+    const isCached = await checkSubtitleInCache(fileId);
+    const cacheIndicatorColor = isCached ? '#2ecc71' : '#95a5a6';
+    const cacheText = isCached ? 'Cached' : 'Not cached';
     
-    // Add more detailed information with text handling for long strings - LEFT ALIGNED
     item.innerHTML = `
         <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
             <h3 style="margin: 0; font-family: Arial, sans-serif; font-size: 16px; color: #00a1d6; overflow: hidden; text-overflow: ellipsis; max-width: 350px; white-space: nowrap;">
@@ -369,18 +363,18 @@ function createResultItem(result: any, index: number): HTMLElement {
             ${releaseInfo}
         </div>
         <div style="display: flex; justify-content: flex-start; font-family: Arial, sans-serif; font-size: 14px; color: #666; margin-bottom: 10px; align-items: center;">
-            ${cacheStatus}
+            <div class="subtitle-cache-status" data-subtitle-id="${fileId}" style="display: inline-flex; align-items: center; margin-right: 8px;">
+                <span class="cache-indicator" style="width: 8px; height: 8px; border-radius: 50%; background-color: ${cacheIndicatorColor}; margin-right: 4px;"></span>
+                <span class="cache-text" style="font-size: 12px; color: ${cacheIndicatorColor};">${cacheText}</span>
+            </div>
             <span>Downloads: ${downloads}</span>
         </div>
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button class="os-view-btn" data-subtitle-id="${result.id}" style="padding: 6px 12px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">View</button>
-            <button class="os-download-btn" data-subtitle-id="${result.id}" style="padding: 6px 12px; background-color: #00a1d6; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">Apply</button>
-            <button class="os-save-file-btn" data-subtitle-id="${result.id}" style="padding: 6px 12px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">Save File</button>
+            <button class="os-view-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">View</button>
+            <button class="os-download-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: #00a1d6; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">Apply</button>
+            <button class="os-save-file-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">Save File</button>
         </div>
     `;
-    
-    // Check cache status asynchronously
-    checkCacheStatus(result.id, item);
     
     return item;
 }
@@ -425,7 +419,10 @@ function attachResultButtonListeners(): void {
             e.stopPropagation(); // Stop event bubbling
             const target = e.currentTarget as HTMLElement;
             const subtitleId = target.dataset.subtitleId;
-            if (subtitleId) handleSubtitleDownload(subtitleId);
+            if (subtitleId) {
+                const resultItem = target.closest('.os-result-item');
+                if (resultItem) handleSubtitleDownload(resultItem as HTMLElement);
+            }
         });
     });
     
@@ -434,8 +431,11 @@ function attachResultButtonListeners(): void {
             e.preventDefault();  // Prevent default behavior
             e.stopPropagation(); // Stop event bubbling
             const target = e.currentTarget as HTMLElement;
-            const subtitleId = target.dataset.subtitleId;
-            if (subtitleId) showSubtitleViewer(subtitleId);
+            const resultItem = target.closest('.os-result-item');
+            if (resultItem) {
+                const subtitleId = target.dataset.subtitleId;
+                if (subtitleId) showSubtitleViewer(resultItem as HTMLElement);
+            }
         });
     });
     
@@ -444,13 +444,13 @@ function attachResultButtonListeners(): void {
             e.preventDefault();  // Prevent default behavior
             e.stopPropagation(); // Stop event bubbling
             const target = e.currentTarget as HTMLElement;
-            const subtitleId = target.dataset.subtitleId;
-            if (subtitleId) handleSubtitleSaveToFile(subtitleId);
+            const resultItem = target.closest('.os-result-item');
+            if (resultItem) handleSubtitleSaveToFile(resultItem as HTMLElement);
         });
     });
 }
 
-async function handleSubtitleDownload(subtitleId: string): Promise<void> {
+async function handleSubtitleDownload(resultElement: HTMLElement): Promise<void> {
     // Prevent multiple simultaneous downloads
     if (window.subtitleApplicationInProgress) {
         console.log("Subtitle application already in progress, ignoring duplicate request");
@@ -459,69 +459,72 @@ async function handleSubtitleDownload(subtitleId: string): Promise<void> {
     
     window.subtitleApplicationInProgress = true;
     
-    try {
-        // Find the result data
-        const result = currentSearchResults.find(r => r.id === subtitleId);
-        if (!result) {
-            console.error("Subtitle not found in current results");
-            window.subtitleApplicationInProgress = false;
-            return;
-        }
-        
-        // Get the button element to show loading state
-        const button = document.querySelector(`.os-download-btn[data-subtitle-id="${subtitleId}"]`);
-        if (button) {
-            setDownloadButtonLoading(button);
-        }
-        
-        // Pre-emptively clean up any existing subtitles
-        const videoPlayer = document.querySelector('video');
-        if (videoPlayer) {
-            clearExistingSubtitles(videoPlayer);
-            // Add a small delay to ensure DOM operations complete
-            await new Promise(resolve => setTimeout(resolve, 50));
-        }
-        
-        // Get the token data
-        const tokenData = await getToken();
-        if (!tokenData) {
-            alert("Authentication required. Please log in.");
-            window.subtitleApplicationInProgress = false;
-            if (button) setDownloadButtonError(button);
-            return;
-        }
-        
-        // Fetch subtitle data
-        const subtitleData = await fetchSubtitleData(tokenData, subtitleId);
-        
-        if (!subtitleData) {
-            if (button) setDownloadButtonError(button);
-            window.subtitleApplicationInProgress = false;
-            return;
-        }
-        
-        // Apply the subtitle content to the video
-        const success = await applySubtitleToVideo(subtitleData.content);
-        
-        if (success) {
-            if (button) {
-                setDownloadButtonSuccess(button);
-            }
-            
-            // Clear modal state since we've applied the subtitle and closing all modals
-            setActiveModal(ActiveModal.NONE);
-            hideResultsModal();
-        } else {
-            if (button) setDownloadButtonError(button);
-        }
-    } catch (error) {
-        console.error("Error downloading subtitle:", error);
-        const button = document.querySelector(`.os-download-btn[data-subtitle-id="${subtitleId}"]`);
-        if (button) setDownloadButtonError(button);
-    } finally {
-        // Always release the lock when done
+    // Extract the apply button and its subtitleId from the provided result element
+    const button = resultElement.querySelector('.os-download-btn') as HTMLElement;
+    const subtitleId = button?.dataset.subtitleId;
+    
+    if (!subtitleId) {
+        console.error("Subtitle ID not found in the provided result element");
         window.subtitleApplicationInProgress = false;
+        return;
     }
+    
+    // Modified search logic to find by file_id using the extracted subtitleId
+    const result = currentSearchResults.find(r => 
+        r.attributes?.files &&
+        r.attributes.files.some((file: any) => file.file_id.toString() === subtitleId)
+    );
+    
+    if (!result) {
+        console.error(`Subtitle not found for file ID ${subtitleId} in current results`);
+        window.subtitleApplicationInProgress = false;
+        return;
+    }
+    
+    if (button) {
+        setDownloadButtonLoading(button);
+    }
+    
+    // Pre-emptively clean up any existing subtitles from the video
+    const videoPlayer = document.querySelector('video');
+    if (videoPlayer) {
+        clearExistingSubtitles(videoPlayer);
+        // Slight delay to ensure DOM operations complete
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    // Get the token data for API authentication
+    const tokenData = await getToken();
+    if (!tokenData) {
+        alert("Authentication required. Please log in.");
+        window.subtitleApplicationInProgress = false;
+        if (button) setDownloadButtonError(button);
+        return;
+    }
+    
+    // Fetch subtitle data from the API
+    const subtitleData = await fetchSubtitleData(tokenData, subtitleId);
+    if (!subtitleData) {
+        if (button) setDownloadButtonError(button);
+        window.subtitleApplicationInProgress = false;
+        return;
+    }
+    
+    // Apply the subtitle content to the video
+    const success = await applySubtitleToVideo(subtitleData.content);
+    if (success) {
+        if (button) {
+            // Update the cache indicator to green if the subtitle is cached
+            updateCacheStatusDisplay(subtitleId);
+            setDownloadButtonSuccess(button);
+        }
+        hideResultsModal();
+    } else {
+        if (button) setDownloadButtonError(button);
+    }
+    
+    // Always release the lock when done
+    window.subtitleApplicationInProgress = false;
 }
 
 function setDownloadButtonLoading(button: Element): void {
@@ -604,11 +607,22 @@ export function updateCacheStatusDisplay(subtitleId: string): void {
     });
 }
 
-async function handleSubtitleSaveToFile(subtitleId: string): Promise<void> {
-    // Find the result data
-    const result = currentSearchResults.find(r => r.id === subtitleId);
+async function handleSubtitleSaveToFile(resultElement: HTMLElement): Promise<void> {
+    const osViewBtn = resultElement.querySelector('.os-view-btn') as HTMLElement;
+    const subtitleId = osViewBtn?.dataset.subtitleId || '';
+    if (!subtitleId) {
+        console.error("Invalid subtitle ID:", subtitleId);
+        return;
+    }
+
+    // Find the result data using file_id
+    const result = currentSearchResults.find(r => 
+        r.attributes?.files && 
+        r.attributes.files.some((file: any) => file.file_id.toString() === subtitleId)
+    );
+    
     if (!result) {
-        console.error("Subtitle not found in current results");
+        console.error(`Subtitle not found for file ID ${subtitleId} in current results`);
         return;
     }
     
@@ -683,12 +697,15 @@ function updatePaginationControls(): void {
 }
 
 // Update results with data from search
+// Update results with data from search
 export function updateResults(data: any[]): void {
-    // Update global state
+    // Update search results data only, don't override pagination
     currentSearchResults = data;
-    currentPage = 1;
-    totalPages = 1;
-    totalCount = data.length;
+    
+    // If no explicit pagination was set by updatePaginationState, use defaults
+    if (totalPages === 0) totalPages = 1;
+    if (currentPage === 0) currentPage = 1;
+    if (totalCount === 0) totalCount = data.length;
     
     // Display the results
     displayCurrentPage();

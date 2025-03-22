@@ -146,7 +146,7 @@ export async function searchSubtitles(tokenData: TokenData, searchParams: URLSea
         if (!response.ok) {
             throw new Error(data.message || `API error: ${response.status}`);
         }
-        
+        console.log(data);
         return data;
     } catch (error) {
         console.error('Error searching subtitles:', error);
@@ -242,29 +242,31 @@ export async function fetchSubtitleData(tokenData: TokenData, subtitleId: string
     }
     
     try {
-        // Step 1: Get download link from API
+        // Get download link from API
         const downloadData = await downloadSubtitle(tokenData, subtitleId);
-        const downloadLink = downloadData.link;
         
-        // Step 2: Download the actual subtitle content
-        const contentResponse = await fetch(downloadLink);
+        // Download the actual subtitle content
+        const contentResponse = await fetch(downloadData.link);
         if (!contentResponse.ok) {
             throw new Error(`Failed to download subtitle content: ${contentResponse.statusText}`);
         }
-        
         const content = await contentResponse.text();
+        
+        // Let fileId be the 0th file's file_id if available, otherwise fallback to subtitleId
+        const fileId = downloadData.files && downloadData.files.length > 0 ? downloadData.files[0].file_id : subtitleId;
         const fileName = downloadData.file_name || `subtitle_${subtitleId}.srt`;
         
-        // Create a subtitle data object
+        // Create the subtitle data object with fileId as cache key
         const subtitleData = {
-            id: subtitleId,
+            id: fileId,
             content,
             fileName,
             title: downloadData.file_name,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            // ... any additional properties you need
         };
         
-        // Store in cache
+        // Store in cache with file_id as key
         await storeSubtitle(subtitleData);
         
         return subtitleData;
