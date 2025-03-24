@@ -2,6 +2,7 @@ import { createDiv } from '../ui/components';
 import { saveSettingsToIndexedDB, loadSettingsFromIndexedDB, getUserInfoFromDB, getTokenDataFromDB, saveUserInfoToDB} from '../db/indexedDB';
 import { getUserInfo } from '../api/openSubtitles';
 import { setActiveModal, ActiveModal } from './ModalManager'
+import { showSearchModal } from './SearchModal'
 import settingsModalTemplate from '../templates/settingsModal.html?raw';
 
 // These are moved from global scope in main.user.js to this module
@@ -44,6 +45,7 @@ export function createSettingsModal(): void {
 function setupSettingsEventListeners(): void {
     // Close button
     document.getElementById("os-settings-close-btn")?.addEventListener("click", hideSettingsModal);
+    document.getElementById("os-settings-back-btn")?.addEventListener("click", backSettingsModal);
 
     // Font size controls
     document.getElementById("os-font-size-decrease")?.addEventListener("click", () => updateFontSize(-1));
@@ -656,6 +658,13 @@ export async function showSettingsModal(): Promise<void> {
     const overlay = document.getElementById("opensubtitles-settings-overlay");
     if (overlay) overlay.style.display = "flex";
     setActiveModal(ActiveModal.SETTINGS);
+}
+
+export async function backSettingsModal() {
+    const overlay = document.getElementById("opensubtitles-settings-overlay");
+    if (overlay) overlay.style.display = "none";
+    setActiveModal(ActiveModal.SEARCH);
+    showSearchModal();
 }
 
 // Update UI based on loaded settings
