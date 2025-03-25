@@ -17,7 +17,7 @@ export enum ActiveModal {
 }
 
 // State tracking variables
-let lastActiveModal: ActiveModal = ActiveModal.NONE;
+let lastActiveModal: ActiveModal = ActiveModal.LOGIN;
 let isModalOpen: boolean = false;
 let lastViewedSubtitleId: string | null = null;
 let lastSearchQuery: string | null = null;
@@ -245,7 +245,7 @@ export {
 
 declare global {
     interface Window {
-        searchFormHideTimeout?: number;
-        isNavigatingBackToSearch?: boolean;
+        isNavigatingBackToSearch: boolean;
+        searchFormHideTimeout?: ReturnType<typeof setTimeout>;
     }
 }

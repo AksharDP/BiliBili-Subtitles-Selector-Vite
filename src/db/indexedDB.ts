@@ -1,5 +1,13 @@
-import { DB_NAME, DB_VERSION, STORE_NAME, SUBTITLES_STORE_NAME, SETTINGS_STORE_NAME, LANGUAGES_STORE_NAME, SUBTITLE_CACHE_SIZE } from '../utils/constants';
-import { TokenData, SubtitleData, SettingsData } from '../types';
+import {
+    DB_NAME,
+    DB_VERSION,
+    LANGUAGES_STORE_NAME,
+    SETTINGS_STORE_NAME,
+    STORE_NAME,
+    SUBTITLE_CACHE_SIZE,
+    SUBTITLES_STORE_NAME
+} from '../utils/constants';
+import {SettingsData, SubtitleData, TokenData} from '../types';
 
 export async function openDatabase(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {

@@ -1,32 +1,11 @@
-import { createDiv } from '../ui/components';
+import {createDiv} from '../ui/components';
 import resultsModalTemplate from '../templates/ResultsModal.html?raw';
-import { getToken, checkSubtitleInCache } from '../db/indexedDB';
+import {checkSubtitleInCache, getToken} from '../db/indexedDB';
 
-import { fetchSubtitleData, downloadSubtitle, fetchSubtitleContent } from '../api/openSubtitles';
-import { 
-    createSubtitleViewer, 
-    showSubtitleViewer, 
-    hideSubtitleViewer 
-} from './SubtitleViewerModal';
-import { 
-    applySubtitleToVideo, 
-    clearExistingSubtitles 
-} from '../utils/subtitleRenderer';
-import { 
-    setActiveModal, 
-    ActiveModal 
-} from './ModalManager';
-
-// Define window augmentations
-declare global {
-    interface Window {
-        subtitleApplicationInProgress: boolean;
-        subtitleUpdateAnimationFrame: number | null;
-        activeCues: any[] | null;
-        subtitleSyncOffset: number;
-        searchFormHideTimeout?: number;
-    }
-}
+import {fetchSubtitleData} from '../api/openSubtitles';
+import {hideSubtitleViewer, showSubtitleViewer} from './SubtitleViewerModal';
+import {applySubtitleToVideo, clearExistingSubtitles} from '../utils/subtitleRenderer';
+import {ActiveModal, setActiveModal} from './ModalManager';
 
 // Track pagination state
 let currentSearchResults: any[] = [];
@@ -572,8 +551,7 @@ function setDownloadButtonError(button: Element): void {
         button.style.backgroundColor = "#e74c3c"; // Red background
         
         setTimeout(() => {
-            const originalText = button.getAttribute("data-original-text") || "Apply";
-            button.textContent = originalText;
+            button.textContent = button.getAttribute("data-original-text") || "Apply";
             button.style.backgroundColor = originalBg;
         }, 3000);
     }

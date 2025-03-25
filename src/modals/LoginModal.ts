@@ -1,6 +1,7 @@
 import { createDiv } from '../ui/components';
 import { handleLoginSubmit } from '../ui/handlers';
-import loginModalTemplate from '../templates/loginModal.html?raw'; // Import the HTML
+import loginModalTemplate from '../templates/loginModal.html?raw';
+import {ActiveModal, setActiveModal} from "./ModalManager.ts"; // Import the HTML
 
 export function createLoginModal(): void {
     const loginOverlay = createDiv(
@@ -58,6 +59,7 @@ export function showLoginModal(): void {
     if (overlay) {
         overlay.style.display = "flex";
     }
+    setActiveModal(ActiveModal.LOGIN);
 }
 
 export function hideLoginModal(): void {

@@ -1,4 +1,4 @@
-import { createLoginModal, showLoginModal } from './modals/LoginModal';
+import { createLoginModal } from './modals/LoginModal'; // showLoginModal
 import { createSearchModal } from './modals/SearchModal';
 import { createResultsModal } from './modals/ResultsModal';
 import { createSettingsModal } from './modals/SettingsModal';

@@ -269,22 +269,6 @@ export function updateSearchStatus(message: string, isLoading: boolean = true): 
     }
 }
 
-// Function to reset the search form
-export function resetSearchForm(): void {
-    const form = document.getElementById("opensubtitles-search-form") as HTMLFormElement;
-    if (form) form.reset();
-    
-    // Reset selected languages to English
-    const selectedLanguages = document.getElementById("os-selected-languages");
-    const languagesInput = document.getElementById("os-languages") as HTMLInputElement;
-    
-    if (selectedLanguages && languagesInput) {
-        selectedLanguages.innerHTML = "";
-        languagesInput.value = "en";
-        addLanguageTag('en', 'English', selectedLanguages, languagesInput);
-    }
-}
-
 export async function handleSearchSubmit(e: Event): Promise<void> {
     e.preventDefault();
     const formData = getSearchFormData();

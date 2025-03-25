@@ -1,10 +1,9 @@
-import { createDiv } from '../ui/components';
+import {createDiv} from '../ui/components';
 import subtitleViewerTemplate from '../templates/SubtitleViewer.html?raw';
-import { getToken, checkSubtitleInCache } from '../db/indexedDB';
-import { fetchSubtitleData, fetchSubtitleContent } from '../api/openSubtitles';
-import { loadSettingsFromIndexedDB, saveSettingsToIndexedDB } from '../db/indexedDB';
-import { setupSubtitleDisplay } from '../utils/subtitleDisplay';
-import { setActiveModal, ActiveModal } from './ModalManager';
+import {checkSubtitleInCache, getToken, loadSettingsFromIndexedDB, saveSettingsToIndexedDB} from '../db/indexedDB';
+import {fetchSubtitleData} from '../api/openSubtitles';
+import {setupSubtitleDisplay} from '../utils/subtitleDisplay';
+import {ActiveModal, setActiveModal} from './ModalManager';
 
 // Store timestamps for syncing
 interface TimestampInfo {
@@ -13,13 +12,6 @@ interface TimestampInfo {
     startIndex: number;
     endIndex: number;
     text: string;
-}
-
-// Augment Window interface for global variables
-declare global {
-    interface Window {
-        subtitleTimestamps: TimestampInfo[];
-    }
 }
 
 /**

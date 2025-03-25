@@ -1,6 +1,6 @@
-import { VIP_API_ENDPOINT, PUBLIC_API_ENDPOINT, MOCK_API_ENDPOINT, API_KEY, USER_AGENT } from '../utils/constants';
-import { loadCachedLanguages, storeLanguages, getSubtitleFromCache, storeSubtitle } from '../db/indexedDB';
-import { TokenData } from '../types';
+import {API_KEY, MOCK_API_ENDPOINT, PUBLIC_API_ENDPOINT, USER_AGENT, VIP_API_ENDPOINT} from '../utils/constants';
+import {getSubtitleFromCache, loadCachedLanguages, storeLanguages, storeSubtitle} from '../db/indexedDB';
+import {TokenData} from '../types';
 
 
 // export async function loginWithToken(token: string): Promise<any> {
@@ -150,38 +150,6 @@ export async function searchSubtitles(tokenData: TokenData, searchParams: URLSea
         return data;
     } catch (error) {
         console.error('Error searching subtitles:', error);
-        throw error;
-    }
-}
-
-export async function fetchSubtitleContent(tokenData: TokenData, fileId: string): Promise<any> {
-    if (!tokenData?.token) {
-        throw new Error("Authentication required");
-    }
-
-    const apiEndpoint = tokenData.base_url?.includes("vip") 
-        ? VIP_API_ENDPOINT 
-        : PUBLIC_API_ENDPOINT;
-    
-    try {
-        const response = await fetch(`${apiEndpoint}/subtitles/${fileId}`, {
-            method: 'GET',
-            headers: {
-                'Api-Key': API_KEY,
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${tokenData.token}`,
-                'User-Agent': USER_AGENT
-            }
-        });
-        
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.message || `API error: ${response.status}`);
-        }
-        
-        return data;
-    } catch (error) {
-        console.error(`Error fetching subtitle content for ID ${fileId}:`, error);
         throw error;
     }
 }

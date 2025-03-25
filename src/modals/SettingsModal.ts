@@ -1,16 +1,20 @@
-import { createDiv } from '../ui/components';
-import { saveSettingsToIndexedDB, loadSettingsFromIndexedDB, getUserInfoFromDB, getTokenDataFromDB, saveUserInfoToDB} from '../db/indexedDB';
-import { getUserInfo } from '../api/openSubtitles';
-import { setActiveModal, ActiveModal } from './ModalManager'
-import { showSearchModal } from './SearchModal'
+import {createDiv} from '../ui/components';
+import {
+    getTokenDataFromDB,
+    getUserInfoFromDB,
+    loadSettingsFromIndexedDB,
+    saveSettingsToIndexedDB,
+    saveUserInfoToDB
+} from '../db/indexedDB';
+import {getUserInfo} from '../api/openSubtitles';
+import {ActiveModal, setActiveModal} from './ModalManager'
+import {showSearchModal} from './SearchModal'
 import settingsModalTemplate from '../templates/settingsModal.html?raw';
 
 // These are moved from global scope in main.user.js to this module
 let currentFontColor = "#FFFFFF";
 let currentOutlineColor = "#000000";
 let currentBgColor = "#000000";
-let currentAnimationType = "fade";
-let currentAnimationDuration = 0.3;
 
 export function createSettingsModal(): void {
     const settingsOverlay = createDiv("opensubtitles-settings-overlay", "", `
@@ -61,7 +65,7 @@ function setupSettingsEventListeners(): void {
             }
         });
     });
-    
+
     document.getElementById("os-custom-font-color")?.addEventListener("input", e => {
         const target = e.target as HTMLInputElement;
         setFontColor(target.value);
@@ -69,12 +73,12 @@ function setupSettingsEventListeners(): void {
         (document.getElementById("os-hex-color-input") as HTMLInputElement).value = target.value.replace('#', '');
         document.getElementById("os-custom-color-container")!.style.border = "2px solid #00a1d6";
     });
-    
+
     document.getElementById("os-hex-color-input")?.addEventListener("input", e => {
         const target = e.target as HTMLInputElement;
         let color = target.value;
         if (!color.startsWith('#')) color = '#' + color;
-        
+
         if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)) {
             setFontColor(color);
             clearFontColorSelection();
@@ -85,7 +89,7 @@ function setupSettingsEventListeners(): void {
 
     // Background toggle
     document.getElementById("os-bg-toggle")?.addEventListener("change", handleBgToggleChange);
-    
+
     // Background color controls
     document.querySelectorAll(".os-bg-color-btn").forEach(btn => {
         btn.addEventListener("click", e => {
@@ -97,10 +101,10 @@ function setupSettingsEventListeners(): void {
             }
         });
     });
-    
+
     document.getElementById("os-custom-bg-color")?.addEventListener("input", handleBgColorPickerInput);
     document.getElementById("os-bg-hex-color-input")?.addEventListener("input", handleBgHexColorInput);
-    
+
     // Background opacity
     document.getElementById("os-bg-opacity")?.addEventListener("input", e => {
         const target = e.target as HTMLInputElement;
@@ -112,7 +116,7 @@ function setupSettingsEventListeners(): void {
 
     // Outline toggle
     document.getElementById("os-outline-toggle")?.addEventListener("change", handleOutlineToggleChange);
-    
+
     // Outline color controls
     document.querySelectorAll(".os-outline-color-btn").forEach(btn => {
         btn.addEventListener("click", e => {
@@ -124,7 +128,7 @@ function setupSettingsEventListeners(): void {
             }
         });
     });
-    
+
     document.getElementById("os-custom-outline-color")?.addEventListener("input", handleOutlineColorPickerInput);
     document.getElementById("os-outline-hex-color-input")?.addEventListener("input", handleOutlineHexColorInput);
 
@@ -134,7 +138,7 @@ function setupSettingsEventListeners(): void {
         (document.getElementById("os-sync-value") as HTMLInputElement).value = target.value;
         saveSettingsDebounced();
     });
-    
+
     document.getElementById("os-sync-value")?.addEventListener("input", handleSyncValueInput);
     document.getElementById("os-sync-reset")?.addEventListener("click", resetSyncSettings);
 
@@ -199,7 +203,7 @@ async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
             await saveUserInfoToDB(userData);
             // Update UI with new data
             updateUserInfoUI(userData);
-            
+
             // Show success state
             if (refreshBtn && showRefreshedIndicator) {
                 refreshBtn.textContent = "Updated!";
@@ -220,7 +224,7 @@ async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
         }
     } catch (error) {
         console.error("Error refreshing user info:", error);
-        
+
         // Show error state
         if (refreshBtn) {
             refreshBtn.textContent = "Error";
@@ -243,19 +247,6 @@ async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
     }
 }
 
-async function loadUserInfo(): Promise<void> {
-    try {
-        // Get user account info
-        let userData = await getUserInfoFromDB();
-
-        // Update UI with combined data
-        updateUserInfoUI(userData);
-    } catch (error) {
-        console.error("Error loading user info into UI:", error);
-        updateUserInfoUIForError("Error loading user information.<br>Please try refreshing.");
-    }
-}
-
 function updateUserInfoUI(userData: any): void {
     const userInfoElement = document.getElementById("os-user-info");
     if (!userData || !userData.data) return updateUserInfoUIForError("No user information found.<br>Please try refreshing.");
@@ -267,23 +258,23 @@ function updateUserInfoUI(userData: any): void {
                 <div>
                     ${userData.data.level || "Unknown"} 
                     ${
-                        userData.data.vip
-                            ? '<span id="os-user-vip-badge" style="background-color: #ffc107; color: #000; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">VIP</span>'
-                            : ""
-                    }
+            userData.data.vip
+                ? '<span id="os-user-vip-badge" style="background-color: #ffc107; color: #000; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">VIP</span>'
+                : ""
+        }
                 </div>
                 
                 <div><strong>Downloads:</strong></div>
                 <div>${userData.data.downloads_count || "0"} / ${
-                userData.data.allowed_downloads || "0"
-            } (${userData.data.remaining_downloads || "0"} remaining)</div>
+            userData.data.allowed_downloads || "0"
+        } (${userData.data.remaining_downloads || "0"} remaining)</div>
                 
                 <div><strong>Reset Time:</strong></div>
                 <div>${
-                    userData.data && userData.data.reset_time_utc
-                        ? formatUTCtoLocalTime(userData.data.reset_time_utc)
-                        : "Unknown. Download to show."
-                }</div>
+            userData.data && userData.data.reset_time_utc
+                ? formatUTCtoLocalTime(userData.data.reset_time_utc)
+                : "Unknown. Download to show."
+        }</div>
                 
                 <div><strong>Last Update:</strong></div>
                 <div>${userData.timestamp ? new Date(userData.timestamp).toLocaleString() : "Never"}</div>
@@ -314,7 +305,7 @@ function handleBgToggleChange(e: Event): void {
             toggleDot.style.transform = isChecked ? "translateX(26px)" : "";
         }
     }
-    
+
     saveSettingsDebounced();
 }
 
@@ -333,7 +324,7 @@ function handleOutlineToggleChange(e: Event): void {
             toggleDot.style.transform = isChecked ? "translateX(26px)" : "";
         }
     }
-    
+
     saveSettingsDebounced();
 }
 
@@ -352,7 +343,7 @@ function handleAnimationToggleChange(e: Event): void {
             toggleDot.style.transform = isChecked ? "translateX(26px)" : "";
         }
     }
-    
+
     saveSettingsDebounced();
 }
 
@@ -371,7 +362,7 @@ function handleBgHexColorInput(e: Event): void {
     const target = e.target as HTMLInputElement;
     let color = target.value;
     if (!color.startsWith('#')) color = '#' + color;
-    
+
     if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)) {
         setBgColor(color);
         clearBgColorSelection();
@@ -386,7 +377,7 @@ function handleOutlineHexColorInput(e: Event): void {
     const target = e.target as HTMLInputElement;
     let color = target.value;
     if (!color.startsWith('#')) color = '#' + color;
-    
+
     if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)) {
         setOutlineColor(color);
         clearOutlineColorSelection();
@@ -440,14 +431,14 @@ function setFontColor(color: string): void {
 function highlightSelectedFontColor(selectedColor: string): void {
     clearFontColorSelection();
     const colorBtns = document.querySelectorAll(".os-font-color-btn");
-    
+
     colorBtns.forEach(btn => {
         const btnElement = btn as HTMLElement;
         if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
             btnElement.style.border = "2px solid #00a1d6";
         }
     });
-    
+
     if (!Array.from(colorBtns).some(btn => {
         const btnElement = btn as HTMLElement;
         return btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase();
@@ -474,14 +465,14 @@ function setBgColor(color: string): void {
 function highlightSelectedBgColor(selectedColor: string): void {
     clearBgColorSelection();
     const colorBtns = document.querySelectorAll(".os-bg-color-btn");
-    
+
     colorBtns.forEach(btn => {
         const btnElement = btn as HTMLElement;
         if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
             btnElement.style.border = "2px solid #00a1d6";
         }
     });
-    
+
     if (!Array.from(colorBtns).some(btn => {
         const btnElement = btn as HTMLElement;
         return btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase();
@@ -508,14 +499,14 @@ function setOutlineColor(color: string): void {
 function highlightSelectedOutlineColor(selectedColor: string): void {
     clearOutlineColorSelection();
     const colorBtns = document.querySelectorAll(".os-outline-color-btn");
-    
+
     colorBtns.forEach(btn => {
         const btnElement = btn as HTMLElement;
         if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
             btnElement.style.border = "2px solid #00a1d6";
         }
     });
-    
+
     if (!Array.from(colorBtns).some(btn => {
         const btnElement = btn as HTMLElement;
         return btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase();
@@ -558,6 +549,7 @@ function updateAnimationOptionsVisibility(isVisible: boolean): void {
 
 // Debounce helper to prevent too many saves
 let saveTimeout: number | null = null;
+
 function saveSettingsDebounced(): void {
     if (saveTimeout) {
         clearTimeout(saveTimeout);
@@ -570,27 +562,23 @@ function saveSettingsDebounced(): void {
 async function saveAllSettingsInternal(): Promise<void> {
     // Get settings from the UI
     const settings = getSettingsFromUI();
-    
+
     // Update global variables with the new settings
     currentFontColor = settings.fontColor;
     currentOutlineColor = settings.outlineColor;
     currentBgColor = settings.bgColor;
     (window as any).subtitleSyncOffset = settings.syncOffset;
-    
-    // Update global animation properties
-    currentAnimationType = settings.animationType;
-    currentAnimationDuration = settings.animationDuration;
-    
+
     try {
         // Save settings to IndexedDB
         await saveSettingsToIndexedDB(settings);
-        
+
         // Apply changes to active subtitles (e.g. update a CSS variable)
         document.documentElement.style.setProperty('--subtitle-font-size', `${settings.fontSize}px`);
         // Also update global CSS variables for animation type and duration if used in your styles
-        document.documentElement.style.setProperty('--subtitle-animation-type', settings.animationType);
-        document.documentElement.style.setProperty('--subtitle-animation-duration', `${settings.animationDuration}s`);
-        
+        // document.documentElement.style.setProperty('--subtitle-animation-type', settings.animationType);
+        // document.documentElement.style.setProperty('--subtitle-animation-duration', `${settings.animationDuration}s`);
+
         // (Optional) Call a function to update any active subtitle overlays immediately
         // applySettingsToActiveSubtitles(settings);
     } catch (error) {
@@ -609,7 +597,7 @@ function showNotification(): void {
     if (notification) {
         notification.style.opacity = "1";
         notification.style.transform = "translateY(0)";
-        
+
         setTimeout(() => {
             notification.style.opacity = "0";
             notification.style.transform = "translateY(-20px)";
@@ -634,16 +622,16 @@ function getSettingsFromUI(): any {
     };
 }
 
-export async function showSettingsModal(): Promise<void> {
+export async function showSettingsModal() {
     updateSettingsUI(await loadSettingsFromIndexedDB());
-    
+
     const userInfoElement = document.getElementById("os-user-info");
     // Check if "Last Update:" displays "Never"
     if (userInfoElement && !/Last Update:\s*Never/i.test(userInfoElement.textContent || "")) {
         console.log("[Subtitles Selector] User info already loaded. Skipping update.");
     } else {
         console.log("[Subtitles Selector] Loading user info from db");
-        
+
         let userData = await getUserInfoFromDB();
         // If no user info is found, force a refresh from the API
         if (!userData || !userData.data) {
@@ -654,7 +642,7 @@ export async function showSettingsModal(): Promise<void> {
         updateUserInfoUI(userData);
         console.log("[Subtitles Selector] Updated user info");
     }
-    
+
     const overlay = document.getElementById("opensubtitles-settings-overlay");
     if (overlay) overlay.style.display = "flex";
     setActiveModal(ActiveModal.SETTINGS);
@@ -673,23 +661,23 @@ function updateSettingsUI(settings: any): void {
     currentFontColor = settings?.fontColor || "#FFFFFF";
     currentOutlineColor = settings?.outlineColor || "#000000";
     currentBgColor = settings?.bgColor || "#000000";
-    
+
     // Font size
     const fontSizeValue = document.getElementById("os-font-size-value");
     if (fontSizeValue) {
         fontSizeValue.textContent = `${settings?.fontSize || 16}px`;
     }
-    
+
     // Font color
     (document.getElementById("os-custom-font-color") as HTMLInputElement).value = settings?.fontColor || "#FFFFFF";
     (document.getElementById("os-hex-color-input") as HTMLInputElement).value = (settings?.fontColor || "#FFFFFF").replace('#', '');
     highlightSelectedFontColor(settings?.fontColor || "#FFFFFF");
-    
+
     // Background
     const bgEnabled = settings?.bgEnabled === true;
     (document.getElementById("os-bg-toggle") as HTMLInputElement).checked = bgEnabled;
     updateBgOptionsVisibility(bgEnabled);
-    
+
     // Update toggle appearance
     const bgToggleSpan = document.getElementById("os-bg-toggle")?.nextElementSibling as HTMLElement;
     if (bgToggleSpan) {
@@ -699,23 +687,23 @@ function updateSettingsUI(settings: any): void {
             toggleDot.style.transform = bgEnabled ? "translateX(26px)" : "";
         }
     }
-    
+
     // Background color and opacity
     (document.getElementById("os-custom-bg-color") as HTMLInputElement).value = settings?.bgColor || "#000000";
     (document.getElementById("os-bg-hex-color-input") as HTMLInputElement).value = (settings?.bgColor || "#000000").replace('#', '');
     highlightSelectedBgColor(settings?.bgColor || "#000000");
-    
+
     (document.getElementById("os-bg-opacity") as HTMLInputElement).value = `${settings?.bgOpacity || 0.5}`;
     const bgOpacityValue = document.getElementById("os-bg-opacity-value");
     if (bgOpacityValue) {
         bgOpacityValue.textContent = `${settings?.bgOpacity || 0.5}`;
     }
-    
+
     // Outline
     const outlineEnabled = settings?.outlineEnabled === true;
     (document.getElementById("os-outline-toggle") as HTMLInputElement).checked = outlineEnabled;
     updateOutlineOptionsVisibility(outlineEnabled);
-    
+
     // Update toggle appearance
     const outlineToggleSpan = document.getElementById("os-outline-toggle")?.nextElementSibling as HTMLElement;
     if (outlineToggleSpan) {
@@ -725,23 +713,23 @@ function updateSettingsUI(settings: any): void {
             toggleDot.style.transform = outlineEnabled ? "translateX(26px)" : "";
         }
     }
-    
+
     // Outline color
     (document.getElementById("os-custom-outline-color") as HTMLInputElement).value = settings?.outlineColor || "#000000";
     (document.getElementById("os-outline-hex-color-input") as HTMLInputElement).value = (settings?.outlineColor || "#000000").replace('#', '');
     if (outlineEnabled) {
         highlightSelectedOutlineColor(settings?.outlineColor || "#000000");
     }
-    
+
     // Sync offset
     (document.getElementById("os-sync-slider") as HTMLInputElement).value = `${settings?.syncOffset || 0}`;
     (document.getElementById("os-sync-value") as HTMLInputElement).value = `${settings?.syncOffset || 0}`;
-    
+
     // Animation
     const animationEnabled = settings?.animationEnabled !== false;
     (document.getElementById("os-animation-toggle") as HTMLInputElement).checked = animationEnabled;
     updateAnimationOptionsVisibility(animationEnabled);
-    
+
     // Update toggle appearance
     const animationToggleSpan = document.getElementById("os-animation-toggle")?.nextElementSibling as HTMLElement;
     if (animationToggleSpan) {
@@ -751,7 +739,7 @@ function updateSettingsUI(settings: any): void {
             toggleDot.style.transform = animationEnabled ? "translateX(26px)" : "";
         }
     }
-    
+
     // Animation type and duration
     (document.getElementById("os-animation-type") as HTMLSelectElement).value = settings?.animationType || "fade";
     (document.getElementById("os-animation-duration") as HTMLInputElement).value = `${settings?.animationDuration || 0.3}`;
