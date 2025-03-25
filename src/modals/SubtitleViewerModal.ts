@@ -1,6 +1,6 @@
 import {createDiv} from '../ui/components';
 import subtitleViewerTemplate from '../templates/SubtitleViewer.html?raw';
-import {checkSubtitleInCache, getToken, loadSettingsFromIndexedDB, saveSettingsToIndexedDB} from '../db/indexedDB';
+import {checkSubtitleInCache, getToken, loadSettingsFromIndexedDB} from '../db/indexedDB';
 import {fetchSubtitleData} from '../api/openSubtitles';
 import {setupSubtitleDisplay} from '../utils/subtitleDisplay';
 import {ActiveModal, setActiveModal} from './ModalManager';
@@ -390,7 +390,7 @@ function handleTimestampClick(e: MouseEvent): void {
     // Update settings
     loadSettingsFromIndexedDB().then(settings => {
         settings.syncOffset = offset;
-        saveSettingsToIndexedDB(settings);
+        // saveSettingsToIndexedDB(settings);
         
         // Update sync status
         const syncStatus = document.getElementById("subtitle-sync-status");
@@ -498,7 +498,7 @@ function autoSyncSubtitles(): void {
     
     loadSettingsFromIndexedDB().then(settings => {
         settings.syncOffset = offset;
-        saveSettingsToIndexedDB(settings);
+        // saveSettingsToIndexedDB(settings);
         
         // Update UI
         const syncStatus = document.getElementById("subtitle-sync-status");
