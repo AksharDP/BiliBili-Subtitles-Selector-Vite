@@ -247,10 +247,20 @@ async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
     }
 }
 
-function updateUserInfoUI(userData: any): void {
+function updateUserInfoUI(userData: any) {
     const userInfoElement = document.getElementById("os-user-info");
-    if (!userData || !userData.data) return updateUserInfoUIForError("No user information found.<br>Please try refreshing.");
-    console.log(userData);
+    if (!userData || !userData.data) {
+        if (userInfoElement) {
+            userInfoElement.innerHTML = `
+                <div style="color: #e74c3c; font-size: 14px; text-align: center;">
+                    No user information found.<br>
+                    Please try refreshing.
+                </div>
+            `;
+        }
+        return;
+    }
+
     if (userInfoElement) {
         userInfoElement.innerHTML = `
             <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-family: Arial, sans-serif; font-size: 14px;">
@@ -280,13 +290,6 @@ function updateUserInfoUI(userData: any): void {
                 <div>${userData.timestamp ? new Date(userData.timestamp).toLocaleString() : "Never"}</div>
             </div>
         `;
-    }
-}
-
-function updateUserInfoUIForError(message: string): void {
-    const userInfoElement = document.getElementById("os-user-info");
-    if (userInfoElement) {
-        userInfoElement.innerHTML = `<div style="color: #e74c3c; font-family: Arial, sans-serif; font-size: 14px; text-align: center;">${message}</div>`;
     }
 }
 
