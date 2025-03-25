@@ -74,21 +74,11 @@ function setupSettingsEventListeners(): void {
         document.getElementById("os-custom-color-container")!.style.border = "2px solid #00a1d6";
     });
 
-    document.getElementById("os-hex-color-input")?.addEventListener("input", e => {
-        const target = e.target as HTMLInputElement;
-        let color = target.value;
-        if (!color.startsWith('#')) color = '#' + color;
+    document.getElementById("os-hex-color-input")?.addEventListener("input", e => handleHexColorInput(e, 'font'));
 
-        if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)) {
-            setFontColor(color);
-            clearFontColorSelection();
-            (document.getElementById("os-custom-font-color") as HTMLInputElement).value = color;
-            document.getElementById("os-custom-color-container")!.style.border = "2px solid #00a1d6";
-        }
-    });
 
     // Background toggle
-    document.getElementById("os-bg-toggle")?.addEventListener("change", handleBgToggleChange);
+    document.getElementById("os-bg-toggle")?.addEventListener("change", handleBgToggle);
 
     // Background color controls
     document.querySelectorAll(".os-bg-color-btn").forEach(btn => {
@@ -102,8 +92,8 @@ function setupSettingsEventListeners(): void {
         });
     });
 
-    document.getElementById("os-custom-bg-color")?.addEventListener("input", handleBgColorPickerInput);
-    document.getElementById("os-bg-hex-color-input")?.addEventListener("input", handleBgHexColorInput);
+    document.getElementById("os-custom-bg-color")?.addEventListener("input", handleBgColorPicker);
+    document.getElementById("os-bg-hex-color-input")?.addEventListener("input", e => handleHexColorInput(e, 'bg'));
 
     // Background opacity
     document.getElementById("os-bg-opacity")?.addEventListener("input", e => {
@@ -115,7 +105,7 @@ function setupSettingsEventListeners(): void {
     });
 
     // Outline toggle
-    document.getElementById("os-outline-toggle")?.addEventListener("change", handleOutlineToggleChange);
+    document.getElementById("os-outline-toggle")?.addEventListener("change", handleOutlineToggle);
 
     // Outline color controls
     document.querySelectorAll(".os-outline-color-btn").forEach(btn => {
@@ -130,8 +120,7 @@ function setupSettingsEventListeners(): void {
     });
 
     document.getElementById("os-custom-outline-color")?.addEventListener("input", handleOutlineColorPickerInput);
-    document.getElementById("os-outline-hex-color-input")?.addEventListener("input", handleOutlineHexColorInput);
-
+    document.getElementById("os-outline-hex-color-input")?.addEventListener("input", e => handleHexColorInput(e, 'outline'));
     // Sync controls
     document.getElementById("os-sync-slider")?.addEventListener("input", e => {
         const target = e.target as HTMLInputElement;
@@ -143,7 +132,7 @@ function setupSettingsEventListeners(): void {
     document.getElementById("os-sync-reset")?.addEventListener("click", resetSyncSettings);
 
     // Animation controls
-    document.getElementById("os-animation-toggle")?.addEventListener("change", handleAnimationToggleChange);
+    document.getElementById("os-animation-toggle")?.addEventListener("change", handleAnimationToggle);
     document.getElementById("os-animation-type")?.addEventListener("change", saveSettingsDebounced);
     document.getElementById("os-animation-duration")?.addEventListener("input", e => {
         const target = e.target as HTMLInputElement;
@@ -294,7 +283,7 @@ function updateUserInfoUI(userData: any) {
 }
 
 // Helper for handling bg toggle changes
-function handleBgToggleChange(e: Event): void {
+function handleBgToggle(e: Event): void {
     const target = e.target as HTMLInputElement;
     const isChecked = target.checked;
     updateBgOptionsVisibility(isChecked);
@@ -312,8 +301,18 @@ function handleBgToggleChange(e: Event): void {
     saveSettingsDebounced();
 }
 
+// Handle background color picker input
+function handleBgColorPicker(e: Event): void {
+    const target = e.target as HTMLInputElement;
+    setBgColor(target.value);
+    clearBgColorSelection();
+    (document.getElementById("os-bg-hex-color-input") as HTMLInputElement).value = target.value.replace('#', '');
+    document.getElementById("os-bg-color-container")!.style.border = "2px solid #00a1d6";
+    saveSettingsDebounced();
+}
+
 // Helper for handling outline toggle changes
-function handleOutlineToggleChange(e: Event): void {
+function handleOutlineToggle(e: Event): void {
     const target = e.target as HTMLInputElement;
     const isChecked = target.checked;
     updateOutlineOptionsVisibility(isChecked);
@@ -332,7 +331,7 @@ function handleOutlineToggleChange(e: Event): void {
 }
 
 // Helper for handling animation toggle changes
-function handleAnimationToggleChange(e: Event): void {
+function handleAnimationToggle(e: Event): void {
     const target = e.target as HTMLInputElement;
     const isChecked = target.checked;
     updateAnimationOptionsVisibility(isChecked);
@@ -350,42 +349,43 @@ function handleAnimationToggleChange(e: Event): void {
     saveSettingsDebounced();
 }
 
-// Handle background color picker input
-function handleBgColorPickerInput(e: Event): void {
-    const target = e.target as HTMLInputElement;
-    setBgColor(target.value);
-    clearBgColorSelection();
-    (document.getElementById("os-bg-hex-color-input") as HTMLInputElement).value = target.value.replace('#', '');
-    document.getElementById("os-bg-color-container")!.style.border = "2px solid #00a1d6";
-    saveSettingsDebounced();
+function hexToRGBA(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// Handle background hex color input
-function handleBgHexColorInput(e: Event): void {
+function handleHexColorInput(e: Event, colorType: 'font' | 'bg' | 'outline'): void {
     const target = e.target as HTMLInputElement;
     let color = target.value;
     if (!color.startsWith('#')) color = '#' + color;
 
     if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)) {
-        setBgColor(color);
-        clearBgColorSelection();
-        (document.getElementById("os-custom-bg-color") as HTMLInputElement).value = color;
-        document.getElementById("os-bg-color-container")!.style.border = "2px solid #00a1d6";
-        saveSettingsDebounced();
-    }
-}
+        switch (colorType) {
+            case 'font':
+                setFontColor(color);
+                clearFontColorSelection();
+                (document.getElementById("os-custom-font-color") as HTMLInputElement).value = color;
+                document.getElementById("os-custom-color-container")!.style.border = "2px solid #00a1d6";
+                // apply the color to the subtitle UI
 
-// Handle outline hex color input
-function handleOutlineHexColorInput(e: Event): void {
-    const target = e.target as HTMLInputElement;
-    let color = target.value;
-    if (!color.startsWith('#')) color = '#' + color;
+                break;
+            case 'bg':
+                setBgColor(color);
+                clearBgColorSelection();
+                (document.getElementById("os-custom-bg-color") as HTMLInputElement).value = color;
+                document.getElementById("os-bg-color-container")!.style.border = "2px solid #00a1d6";
+                break;
+            case 'outline':
+                setOutlineColor(color);
+                clearOutlineColorSelection();
+                (document.getElementById("os-custom-outline-color") as HTMLInputElement).value = color;
+                document.getElementById("os-outline-color-container")!.style.border = "2px solid #00a1d6";
+                break;
+        }
+        // refresh the subtitles UI to apply the colors
 
-    if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)) {
-        setOutlineColor(color);
-        clearOutlineColorSelection();
-        (document.getElementById("os-custom-outline-color") as HTMLInputElement).value = color;
-        document.getElementById("os-outline-color-container")!.style.border = "2px solid #00a1d6";
         saveSettingsDebounced();
     }
 }
@@ -575,15 +575,6 @@ async function saveAllSettingsInternal(): Promise<void> {
     try {
         // Save settings to IndexedDB
         await saveSettingsToIndexedDB(settings);
-
-        // Apply changes to active subtitles (e.g. update a CSS variable)
-        document.documentElement.style.setProperty('--subtitle-font-size', `${settings.fontSize}px`);
-        // Also update global CSS variables for animation type and duration if used in your styles
-        // document.documentElement.style.setProperty('--subtitle-animation-type', settings.animationType);
-        // document.documentElement.style.setProperty('--subtitle-animation-duration', `${settings.animationDuration}s`);
-
-        // (Optional) Call a function to update any active subtitle overlays immediately
-        // applySettingsToActiveSubtitles(settings);
     } catch (error) {
         console.error('Error saving settings:', error);
     }
@@ -591,11 +582,7 @@ async function saveAllSettingsInternal(): Promise<void> {
 
 async function saveAllSettings(): Promise<void> {
     await saveAllSettingsInternal();
-    showNotification();
-    hideSettingsModal();
-}
-
-function showNotification(): void {
+    
     const notification = document.getElementById("os-settings-notification");
     if (notification) {
         notification.style.opacity = "1";
@@ -606,6 +593,8 @@ function showNotification(): void {
             notification.style.transform = "translateY(-20px)";
         }, 2000);
     }
+
+    hideSettingsModal();
 }
 
 // Get settings from UI
