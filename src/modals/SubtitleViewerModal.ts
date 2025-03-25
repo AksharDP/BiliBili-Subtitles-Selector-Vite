@@ -519,11 +519,8 @@ function autoSyncSubtitles(): void {
  */
 function copySubtitleToClipboard(): void {
     const textarea = document.getElementById("subtitle-content") as HTMLTextAreaElement;
-    if (!textarea) return;
-    
-    textarea.select();
-    document.execCommand('copy');
-    
+    if (!textarea || !textarea.textContent) return;
+    navigator.clipboard.writeText(textarea.textContent);
     // Show feedback
     const statusElement = document.getElementById("subtitle-sync-status");
     if (statusElement) {
