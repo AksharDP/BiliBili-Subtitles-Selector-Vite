@@ -1,11 +1,7 @@
-import { createDiv } from '../ui/components';
-import { 
-    parseSubtitleContent, 
-    parseSRTCues,
-    parseWebVTTCues 
-} from './subtitleParser';
-import { setupSubtitleDisplay } from './subtitleDisplay';
-import { loadSettingsFromIndexedDB } from '../db/indexedDB';
+import {createDiv} from '../ui/components';
+import {parseSubtitleContent} from './subtitleParser';
+import {setupSubtitleDisplay} from './subtitleDisplay';
+import {loadSettingsFromIndexedDB} from '../db/indexedDB';
 
 /**
  * Create a subtitle overlay container to display subtitles on video
