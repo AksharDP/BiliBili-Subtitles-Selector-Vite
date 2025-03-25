@@ -349,13 +349,6 @@ function handleAnimationToggle(e: Event): void {
     saveSettingsDebounced();
 }
 
-function hexToRGBA(hex: string, alpha: number): string {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 function handleHexColorInput(e: Event, colorType: 'font' | 'bg' | 'outline'): void {
     const target = e.target as HTMLInputElement;
     let color = target.value;
@@ -575,6 +568,7 @@ async function saveAllSettingsInternal(): Promise<void> {
     try {
         // Save settings to IndexedDB
         await saveSettingsToIndexedDB(settings);
+        // check if subtitles exist and update them with the new settings
     } catch (error) {
         console.error('Error saving settings:', error);
     }

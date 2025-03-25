@@ -137,14 +137,6 @@ export async function getSubtitleFromCache(subtitleId: string): Promise<any | nu
     }
 }
 
-export async function storeSettings(settings: SettingsData): Promise<void> {
-    const db = await openDatabase();
-    const transaction = db.transaction([SETTINGS_STORE_NAME], "readwrite");
-    const store = transaction.objectStore(SETTINGS_STORE_NAME);
-    store.put({ id: "userSettings", ...settings });
-    return new Promise((resolve) => transaction.oncomplete = () => resolve());
-}
-
 export async function loadSettingsFromIndexedDB(): Promise<SettingsData> {
     const db = await openDatabase();
     const store = db.transaction([SETTINGS_STORE_NAME], "readonly").objectStore(SETTINGS_STORE_NAME);

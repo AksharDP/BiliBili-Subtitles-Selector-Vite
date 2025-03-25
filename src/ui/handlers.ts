@@ -1,9 +1,8 @@
-import { updateButtonToSubtitles } from './components';
-import { hideResultsModal, showResultsModal } from '../modals/ResultsModal';
-import { showLoginModal, hideLoginModal } from '../modals/LoginModal';
-import { getToken, storeToken } from '../db/indexedDB';
-import { checkToken, validateToken } from '../api/openSubtitles';
-import { restoreLastActiveModal, setActiveModal, ActiveModal } from '../modals/ModalManager';
+import {updateButtonToSubtitles} from './components';
+import {hideLoginModal, showLoginModal} from '../modals/LoginModal';
+import {getToken, storeToken} from '../db/indexedDB';
+import {checkToken, validateToken} from '../api/openSubtitles';
+import {restoreLastActiveModal} from '../modals/ModalManager';
 
 export async function handleLoginSubmit(e: Event): Promise<void> {
     e.preventDefault();
@@ -55,12 +54,6 @@ function showSearchModal(): void {
     if (overlay) overlay.style.display = "flex";
 }
 
-function hideSearchModal(): void {
-    const overlay = document.getElementById("opensubtitles-search-overlay");
-    if (overlay) overlay.style.display = "none";
-}
-
-
 export async function handleButtonClick(): Promise<void> {
     const token = await getToken();
     
@@ -71,22 +64,4 @@ export async function handleButtonClick(): Promise<void> {
         // User is logged in, restore last active modal
         restoreLastActiveModal();
     }
-}
-
-export async function navigateResults(direction: "prev" | "next"): Promise<void> {
-    // Implement navigation logic (assumed truncated in original)
-    console.log(`Navigate ${direction}`);
-}
-
-
-
-export function handleSettingsEvents(): void {
-    const closeBtn = document.getElementById("os-settings-close-btn");
-    const saveBtn = document.getElementById("os-settings-save-btn");
-    if (closeBtn) closeBtn.addEventListener("click", () => {
-        const overlay = document.getElementById("opensubtitles-settings-overlay");
-        if (overlay) overlay.style.display = "none";
-    });
-    if (saveBtn) saveBtn.addEventListener("click", () => console.log("Save settings"));
-    // Add more event listeners as needed
 }
