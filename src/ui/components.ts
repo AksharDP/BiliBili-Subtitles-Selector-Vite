@@ -1,3 +1,5 @@
+import {ActiveModal, setActiveModal} from "../modals/ModalManager.ts";
+
 export function createButton(id: string, text: string, onClick?: () => void, style: string = ""): HTMLButtonElement {
     const button = document.createElement("button");
     button.id = id;
@@ -37,4 +39,5 @@ export function updateButtonToSubtitles(): void {
         button.textContent = "Subtitles";
         button.style.backgroundColor = "#2ecc71";
     }
+    setActiveModal(ActiveModal.SEARCH);
 }

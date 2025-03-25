@@ -51,6 +51,7 @@ async function init(): Promise<void> {
     initModalManager();
 
     const token = await getToken();
+    console.log(token);
     if (token && await checkToken(token)) {
         updateButtonToSubtitles();
     }
