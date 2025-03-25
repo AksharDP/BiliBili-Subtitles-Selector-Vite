@@ -12,15 +12,15 @@ export const TOKEN_EXPIRY_DAYS = 30;
 export const LANGUAGES_STORE_NAME = "languages";
 export const SUBTITLE_CACHE_SIZE = 20;
 
-export let subtitleApplicationInProgress = false;
-export let currentSearchResults: any[] = [];
-export let currentPage = 1;
-export let totalPages = 1;
-export let totalCount = 0;
-export let perPage = 50;
-export let currentSearchQuery = "";
-export let currentSearchParams: string | null = null;
-
-export let currentFontColor = "#FFFFFF";
-export let currentOutlineColor = "#000000";
-export let currentBgColor = "#000000";
+// export let subtitleApplicationInProgress = false;
+// export let currentSearchResults: any[] = [];
+// export let currentPage = 1;
+// export let totalPages = 1;
+// export let totalCount = 0;
+// export let perPage = 50;
+// export let currentSearchQuery = "";
+// export let currentSearchParams: string | null = null;
+//
+// export let currentFontColor = "#FFFFFF";
+// export let currentOutlineColor = "#000000";
+// export let currentBgColor = "#000000";
