@@ -2,20 +2,6 @@ import {API_KEY, MOCK_API_ENDPOINT, PUBLIC_API_ENDPOINT, USER_AGENT, VIP_API_END
 import {getSubtitleFromCache, loadCachedLanguages, storeLanguages, storeSubtitle} from '../db/indexedDB';
 import {TokenData} from '../types';
 
-
-// export async function loginWithToken(token: string): Promise<any> {
-//     const response = await fetch(`${VIP_API_ENDPOINT}/login`, {
-//         method: "POST",
-//         headers: {
-//             "Content-Type": "application/json",
-//             "Api-Key": API_KEY,
-//             "User-Agent": USER_AGENT,
-//         },
-//         body: JSON.stringify({ token }),
-//     });
-//     return response.json();
-// }
-
 export async function validateToken(token: string): Promise<any> {
     try {
         const response = await fetch(`${PUBLIC_API_ENDPOINT}/infos/user`, {
