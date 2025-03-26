@@ -141,14 +141,8 @@ export async function loadSettingsFromIndexedDB(): Promise<SettingsData> {
     const db = await openDatabase();
     const store = db.transaction([SETTINGS_STORE_NAME], "readonly").objectStore(SETTINGS_STORE_NAME);
     const request = store.get("userSettings");
-    return new Promise((resolve) => {
-        request.onsuccess = () => resolve(request.result || getDefaultSettings());
-        request.onerror = () => resolve(getDefaultSettings());
-    });
-}
 
-function getDefaultSettings(): SettingsData {
-    return {
+    const defaultSettings = {
         fontSize: 16,
         fontColor: "#FFFFFF",
         bgEnabled: true,
@@ -158,9 +152,14 @@ function getDefaultSettings(): SettingsData {
         outlineColor: "#000000",
         syncOffset: 0,
         animationEnabled: true,
-        animationType: "fade",
+        animationType: "none",
         animationDuration: 200
     };
+
+    return new Promise((resolve) => {
+        request.onsuccess = () => resolve(request.result || defaultSettings);
+        request.onerror = () => resolve(defaultSettings);
+    });
 }
 
 export async function saveSettingsToIndexedDB(settings: SettingsData): Promise<void> {
