@@ -224,8 +224,6 @@ function removeLanguageTag(
 export function showSearchModal(): void {
     const overlay = document.getElementById("opensubtitles-search-overlay");
     if (overlay) overlay.style.display = "flex";
-    
-    // Update the active modal state
     setActiveModal(ActiveModal.SEARCH);
 }
 

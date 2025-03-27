@@ -1,12 +1,22 @@
-import { createLoginModal } from './modals/LoginModal'; // showLoginModal
+import { createLoginModal, createLoginButton, updateButtonToSubtitles, showLoginModal } from './modals/LoginModal'; // showLoginModal
 import { createSearchModal } from './modals/SearchModal';
 import { createResultsModal } from './modals/ResultsModal';
 import { createSettingsModal } from './modals/SettingsModal';
 import { openDatabase, getToken } from './db/indexedDB';
 import { checkToken } from './api/openSubtitles';
-import { createUIButton, updateButtonToSubtitles } from './ui/components';
-import { handleButtonClick } from './ui/handlers';
-import { initModalManager, hideAllModals } from './modals/ModalManager';
+import { initModalManager, hideAllModals, restoreLastActiveModal } from './modals/ModalManager';
+
+export let openUiBtn: HTMLButtonElement;
+
+async function handleButtonClick(): Promise<void> {
+    const token = await getToken();
+    
+    if (!token || !(await checkToken(token))) {
+        showLoginModal();
+    } else {
+        restoreLastActiveModal();
+    }
+}
 
 async function init(): Promise<void> {
     await openDatabase();
@@ -40,8 +50,9 @@ async function init(): Promise<void> {
     `;
     document.head.appendChild(globalStyle);
 
-    createUIButton();
-    document.getElementById("opensubtitles-login-btn")?.addEventListener("click", handleButtonClick);
+    openUiBtn = createLoginButton();
+    openUiBtn.addEventListener("click", handleButtonClick);
+    // document.getElementById("opensubtitles-login-btn")?.addEventListener("click", handleButtonClick);
     createLoginModal();
     createSearchModal();
     createResultsModal();
@@ -53,10 +64,11 @@ async function init(): Promise<void> {
     const token = await getToken();
     console.log(token);
     if (token && await checkToken(token)) {
-        updateButtonToSubtitles();
+        // updateButtonToSubtitles();
+        updateButtonToSubtitles(openUiBtn);
     }
     
-    // Add global click listener to detect clicks outside modals
+    // if user clicks on the website, then close all modals
     document.addEventListener('click', handleDocumentClick);
 }
 
