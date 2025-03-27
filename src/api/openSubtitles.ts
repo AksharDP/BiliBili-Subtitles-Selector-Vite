@@ -37,7 +37,7 @@ export async function checkToken(tokenData: TokenData): Promise<boolean> {
     if (!tokenData?.token) return false;
 
     const tokenAge = Date.now() - (tokenData.timestamp || 0);
-    if (tokenAge < 30 * 24 * 60 * 60 * 1000) return true;
+    if (tokenAge < (30 * 24 * 60 * 60 * 1000)) return true;
 
     const apiEndpoint = tokenData.base_url === 'vip-api.opensubtitles.com' ? VIP_API_ENDPOINT : PUBLIC_API_ENDPOINT;
     try {
@@ -60,7 +60,7 @@ export async function getUserInfo(tokenData: TokenData): Promise<any> {
     if (!tokenData?.token) return null;
 
     const cachedUserInfo = await getUserInfoFromDB();
-    if (cachedUserInfo && (Date.now() - cachedUserInfo.timestamp) < 30 * 24 * 60 * 60 * 1000) {
+    if (cachedUserInfo && (Date.now() - cachedUserInfo.timestamp) < (30 * 24 * 60 * 60 * 1000)) {
         console.log("[Subtitles Selector] Returning cached user info");
         return cachedUserInfo;
     }
@@ -89,8 +89,7 @@ export async function getUserInfo(tokenData: TokenData): Promise<any> {
 export async function getLanguages(): Promise<any> {
     try {
         const cached = await loadCachedLanguages();
-        const sevenDays = 7 * 24 * 60 * 60 * 1000;
-        if (cached && cached.data && cached.data.length > 0 && (Date.now() - cached.timestamp) < sevenDays) {
+        if (cached && cached.data && cached.data.length > 0 && (Date.now() - cached.timestamp) < (7 * 24 * 60 * 60 * 1000)) {
             console.log("[Subtitles Selector] Returning cached languages");
             return { data: cached.data };
         }
@@ -145,7 +144,7 @@ export async function searchSubtitles(tokenData: TokenData, searchParams: URLSea
     }
 }
 
-export async function downloadSubtitle(tokenData: TokenData, fileId: string): Promise<any> {
+export async function getDownloadSubtitleInfo(tokenData: TokenData, fileId: string): Promise<any> {
     // Check cache first
     const cachedSubtitle = await getSubtitleFromCache(fileId);
     if (cachedSubtitle) {
@@ -189,7 +188,6 @@ export async function downloadSubtitle(tokenData: TokenData, fileId: string): Pr
 }
 
 export async function fetchSubtitleData(tokenData: TokenData, subtitleId: string): Promise<any> {
-    // Check cache first
     const cachedSubtitle = await getSubtitleFromCache(subtitleId);
     if (cachedSubtitle) {
         console.log(`[Subtitles Selector] Using cached subtitle: ${subtitleId}`);
@@ -202,7 +200,7 @@ export async function fetchSubtitleData(tokenData: TokenData, subtitleId: string
     
     try {
         // Get download link from API
-        const downloadData = await downloadSubtitle(tokenData, subtitleId);
+        const downloadData = await getDownloadSubtitleInfo(tokenData, subtitleId);
         
         // Download the actual subtitle content
         const contentResponse = await fetch(downloadData.link);
