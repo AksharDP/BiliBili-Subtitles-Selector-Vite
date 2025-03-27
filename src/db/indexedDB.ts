@@ -170,14 +170,6 @@ export async function saveSettingsToIndexedDB(settings: SettingsData): Promise<v
     return new Promise((resolve) => transaction.oncomplete = () => resolve());
 }
 
-export async function saveUserInfoToDB(userData: any): Promise<void> {
-    const db = await openDatabase();
-    const transaction = db.transaction([SETTINGS_STORE_NAME], "readwrite");
-    const store = transaction.objectStore(SETTINGS_STORE_NAME);
-    store.put({ id: "userInfo", ...userData });
-    return new Promise((resolve) => transaction.oncomplete = () => resolve());
-}
-
 export async function getUserInfoFromDB(): Promise<any | null> {
     const db = await openDatabase();
     const transaction = db.transaction([SETTINGS_STORE_NAME], "readonly");
@@ -187,6 +179,14 @@ export async function getUserInfoFromDB(): Promise<any | null> {
         request.onsuccess = () => resolve(request.result || null);
         request.onerror = () => resolve(null);
     });
+}
+
+export async function saveUserInfoToDB(userData: any): Promise<void> {
+    const db = await openDatabase();
+    const transaction = db.transaction([SETTINGS_STORE_NAME], "readwrite");
+    const store = transaction.objectStore(SETTINGS_STORE_NAME);
+    store.put({ id: "userInfo", ...userData });
+    return new Promise((resolve) => transaction.oncomplete = () => resolve());
 }
 
 export async function getTokenDataFromDB(): Promise<TokenData | null> {

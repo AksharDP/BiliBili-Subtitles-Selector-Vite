@@ -1,5 +1,5 @@
 import {API_KEY, MOCK_API_ENDPOINT, PUBLIC_API_ENDPOINT, USER_AGENT, VIP_API_ENDPOINT} from '../utils/constants';
-import {getSubtitleFromCache, loadCachedLanguages, storeLanguages, storeSubtitle} from '../db/indexedDB';
+import {getSubtitleFromCache, loadCachedLanguages, storeLanguages, storeSubtitle, getUserInfoFromDB, saveUserInfoToDB} from '../db/indexedDB';
 import {TokenData} from '../types';
 
 export async function validateToken(token: string): Promise<any> {
@@ -37,9 +37,7 @@ export async function checkToken(tokenData: TokenData): Promise<boolean> {
     if (!tokenData?.token) return false;
 
     const tokenAge = Date.now() - (tokenData.timestamp || 0);
-    const isLocallyValid = tokenAge < 30 * 24 * 60 * 60 * 1000; // 30 days
-
-    if (isLocallyValid) return true;
+    if (tokenAge < 30 * 24 * 60 * 60 * 1000) return true;
 
     const apiEndpoint = tokenData.base_url === 'vip-api.opensubtitles.com' ? VIP_API_ENDPOINT : PUBLIC_API_ENDPOINT;
     try {
@@ -61,6 +59,12 @@ export async function checkToken(tokenData: TokenData): Promise<boolean> {
 export async function getUserInfo(tokenData: TokenData): Promise<any> {
     if (!tokenData?.token) return null;
 
+    const cachedUserInfo = await getUserInfoFromDB();
+    if (cachedUserInfo && (Date.now() - cachedUserInfo.timestamp) < 30 * 24 * 60 * 60 * 1000) {
+        console.log("[Subtitles Selector] Returning cached user info");
+        return cachedUserInfo;
+    }
+
     const apiEndpoint = tokenData.base_url === 'vip-api.opensubtitles.com' ? VIP_API_ENDPOINT : PUBLIC_API_ENDPOINT;
     try {
         const response = await fetch(`${apiEndpoint}/infos/user`, {
@@ -74,6 +78,7 @@ export async function getUserInfo(tokenData: TokenData): Promise<any> {
         
         const data = await response.json();
         data.timestamp = Date.now();
+        await saveUserInfoToDB(data);
         return data;
     } catch (error) {
         console.error('Error fetching user info:', error);
