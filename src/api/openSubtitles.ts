@@ -1,17 +1,21 @@
 import {API_KEY, MOCK_API_ENDPOINT, PUBLIC_API_ENDPOINT, USER_AGENT, VIP_API_ENDPOINT} from '../utils/constants';
+
 import {getSubtitleFromCache, loadCachedLanguages, storeLanguages, storeSubtitle, getUserInfoFromDB, saveUserInfoToDB} from '../db/indexedDB';
 import {TokenData} from '../types';
 
 export async function validateToken(token: string): Promise<any> {
+    console.log("Validating token:", token);
     try {
+        
+        
         const response = await fetch(`${PUBLIC_API_ENDPOINT}/infos/user`, {
             method: "GET",
             headers: {
-                "Content-Type": "application/json",
+                "Accept": "application/json",
                 "Api-Key": API_KEY,
                 "Authorization": `Bearer ${token}`,
-                "User-Agent": USER_AGENT,
-            },
+                "X-User-Agent": USER_AGENT
+            }
         });
 
         if (!response.ok) {
@@ -46,13 +50,13 @@ export async function checkToken(tokenData: TokenData): Promise<boolean> {
                 "Content-Type": "application/json",
                 "Api-Key": API_KEY,
                 "Authorization": `Bearer ${tokenData.token}`,
-                "User-Agent": USER_AGENT,
+                "X-User-Agent": USER_AGENT,
             },
         });
         return response.ok;
     } catch (error) {
         console.error('Error verifying token with server:', error);
-        return true; // Assume valid on network error
+        return true;
     }
 }
 
@@ -72,7 +76,7 @@ export async function getUserInfo(tokenData: TokenData): Promise<any> {
                 "Content-Type": "application/json",
                 "Api-Key": API_KEY,
                 "Authorization": `Bearer ${tokenData.token}`,
-                "User-Agent": USER_AGENT,
+                "X-User-Agent": USER_AGENT,
             },
         });
         
@@ -97,11 +101,10 @@ export async function getLanguages(): Promise<any> {
             headers: {
                 "Content-Type": "application/json",
                 "Api-Key": API_KEY,
-                "User-Agent": USER_AGENT,
+                "X-User-Agent": USER_AGENT,
             },
         });
         const result = await response.json();
-        // Save result along with current timestamp
         await storeLanguages({ data: result.data, timestamp: Date.now() });
         return result;
     } catch (error) {
@@ -118,7 +121,6 @@ export async function searchSubtitles(tokenData: TokenData, searchParams: URLSea
     const apiEndpoint = tokenData.base_url?.includes("vip") 
         ? VIP_API_ENDPOINT 
         : PUBLIC_API_ENDPOINT;
-    // print endpoint and params
     console.log(apiEndpoint);
     console.log(searchParams.toString());
     try {
@@ -128,7 +130,7 @@ export async function searchSubtitles(tokenData: TokenData, searchParams: URLSea
                 'Api-Key': API_KEY,
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${tokenData.token}`,
-                'User-Agent': USER_AGENT
+                'X-User-Agent': USER_AGENT
             }
         });
         
@@ -145,7 +147,6 @@ export async function searchSubtitles(tokenData: TokenData, searchParams: URLSea
 }
 
 export async function getDownloadSubtitleInfo(tokenData: TokenData, fileId: string): Promise<any> {
-    // Check cache first
     const cachedSubtitle = await getSubtitleFromCache(fileId);
     if (cachedSubtitle) {
         console.log(`[Subtitles Selector] Using cached subtitle: ${fileId}`);
@@ -161,14 +162,13 @@ export async function getDownloadSubtitleInfo(tokenData: TokenData, fileId: stri
         : PUBLIC_API_ENDPOINT;
     
     try {
-        // Get download link from API
         const response = await fetch(`${apiEndpoint}/download`, {
             method: 'POST',
             headers: {
                 'Api-Key': API_KEY,
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${tokenData.token}`,
-                'User-Agent': USER_AGENT
+                'X-User-Agent': USER_AGENT
             },
             body: JSON.stringify({
                 file_id: fileId
@@ -199,31 +199,25 @@ export async function fetchSubtitleData(tokenData: TokenData, subtitleId: string
     }
     
     try {
-        // Get download link from API
         const downloadData = await getDownloadSubtitleInfo(tokenData, subtitleId);
         
-        // Download the actual subtitle content
         const contentResponse = await fetch(downloadData.link);
         if (!contentResponse.ok) {
             throw new Error(`Failed to download subtitle content: ${contentResponse.statusText}`);
         }
         const content = await contentResponse.text();
         
-        // Let fileId be the 0th file's file_id if available, otherwise fallback to subtitleId
         const fileId = downloadData.files && downloadData.files.length > 0 ? downloadData.files[0].file_id : subtitleId;
         const fileName = downloadData.file_name || `subtitle_${subtitleId}.srt`;
         
-        // Create the subtitle data object with fileId as cache key
         const subtitleData = {
             id: fileId,
             content,
             fileName,
             title: downloadData.file_name,
             timestamp: Date.now(),
-            // ... any additional properties you need
         };
         
-        // Store in cache with file_id as key
         await storeSubtitle(subtitleData);
         
         return subtitleData;
