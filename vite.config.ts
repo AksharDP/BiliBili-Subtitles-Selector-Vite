@@ -14,6 +14,8 @@ export default defineConfig({
         icon: 'https://www.google.com/s2/favicons?sz=64&domain=bilibili.com',
         namespace: 'npm/vite-plugin-monkey',
         match: ['https://www.bilibili.com/bangumi/*'],
+        noframes: true,
+        "run-at": 'document-end'
       },
     }),
     html(),
