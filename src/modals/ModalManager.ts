@@ -1,12 +1,11 @@
 // Modal manager for modal state and click-outside behavior
-
+import { openUiBtn } from '../main';
 import { showSearchModal } from './SearchModal';
 import { showResultsModal } from './ResultsModal';
 import { showLoginModal } from './LoginModal';
-import { showSettingsModal } from './SettingsModal';
+import { showSettingsModal, settingsOverlay, settingsModal } from './SettingsModal';
 import { showSubtitleViewer } from './SubtitleViewerModal';
 
-// Track which modal was last active
 export enum ActiveModal {
     NONE = 'none',
     LOGIN = 'login',
@@ -60,7 +59,7 @@ function handleDocumentClick(event: MouseEvent): void {
         document.getElementById('opensubtitles-login-modal'),
         document.getElementById('opensubtitles-search-modal'),
         document.getElementById('opensubtitles-results-modal'),
-        document.getElementById('opensubtitles-settings-modal'),
+        settingsModal,
         document.getElementById('subtitle-viewer-container')
     ];
     
@@ -70,7 +69,7 @@ function handleDocumentClick(event: MouseEvent): void {
     );
     
     // Check if click is on a control button
-    const isClickOnButton = target.closest('#opensubtitles-login-btn') !== null;
+    const isClickOnButton = openUiBtn.contains(target);
     
     // If click is outside modals and not on the button, hide all modals
     if (!isClickInsideModal && !isClickOnButton) {
@@ -86,7 +85,7 @@ export function hideAllModals(): void {
         document.getElementById('opensubtitles-login-overlay'),
         document.getElementById('opensubtitles-search-overlay'),
         document.getElementById('opensubtitles-results-overlay'),
-        document.getElementById('opensubtitles-settings-overlay'),
+        settingsOverlay,
         document.getElementById('subtitle-viewer-overlay')
     ];
     
@@ -164,14 +163,14 @@ function hideOtherModals(exceptModal: ActiveModal): void {
         [ActiveModal.LOGIN]: 'opensubtitles-login-overlay',
         [ActiveModal.SEARCH]: 'opensubtitles-search-overlay',
         [ActiveModal.RESULTS]: 'opensubtitles-results-overlay',
-        [ActiveModal.SETTINGS]: 'opensubtitles-settings-overlay',
+        [ActiveModal.SETTINGS]: settingsOverlay,
         [ActiveModal.SUBTITLE_VIEWER]: 'subtitle-viewer-overlay'
     };
     
-    Object.entries(modalMap).forEach(([modal, id]) => {
+    Object.entries(modalMap).forEach(([modal, overlayElement]) => {
         if (modal !== exceptModal.toString()) {
-            const overlay = document.getElementById(id);
-            if (overlay) overlay.style.display = 'none';
+            const element = typeof overlayElement === 'string' ? document.getElementById(overlayElement) : overlayElement;
+            if (element) element.style.display = 'none';
         }
     });
 }

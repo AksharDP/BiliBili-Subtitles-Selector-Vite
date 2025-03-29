@@ -1,12 +1,17 @@
 import { createLoginModal, createLoginButton, updateButtonToSubtitles, showLoginModal } from './modals/LoginModal'; // showLoginModal
 import { createSearchModal } from './modals/SearchModal';
 import { createResultsModal } from './modals/ResultsModal';
-import { createSettingsModal } from './modals/SettingsModal';
+import { settingsOverlay, createSettingsModal } from './modals/SettingsModal';
 import { openDatabase, getToken } from './db/indexedDB';
 import { checkToken } from './api/openSubtitles';
 import { initModalManager, hideAllModals, restoreLastActiveModal } from './modals/ModalManager';
 
 export let openUiBtn: HTMLButtonElement;
+export let loginOverlay: HTMLDivElement | null;
+export let searchOverlay: HTMLDivElement | null;
+export let resultsOverlay: HTMLDivElement | null;
+// export let settingsOverlay: HTMLDivElement | null;
+export let subtitleViewerOverlay: HTMLDivElement | null;
 
 async function handleButtonClick(): Promise<void> {
     const token = await getToken();
@@ -20,42 +25,36 @@ async function handleButtonClick(): Promise<void> {
 
 async function init(): Promise<void> {
     await openDatabase();
-    const fontLink = document.createElement('link');
-    fontLink.href = 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap';
-    fontLink.rel = 'stylesheet';
-    document.head.appendChild(fontLink);
 
-    const globalStyle = document.createElement('style');
-    globalStyle.textContent = `
-        #opensubtitles-login-btn,
-        #opensubtitles-login-overlay *,
-        #opensubtitles-search-overlay *,
-        #opensubtitles-results-overlay *,
-        #opensubtitles-settings-overlay *,
-        #os-settings-notification,
-        #bilibili-subtitles-draggable * {
-            font-family: 'Nunito', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
-            font-size: max(1px, var(--subtitle-font-size, 16px));
-        }
-        
-        /* Add animation for modals */
-        .os-modal {
-            animation: os-fade-in 0.2s ease-in-out;
-        }
-        
-        @keyframes os-fade-in {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    `;
-    document.head.appendChild(globalStyle);
+    document.head.insertAdjacentHTML('beforeend', `
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+        <style>
+            #opensubtitles-login-btn,
+            #opensubtitles-login-overlay *,
+            #opensubtitles-search-overlay *,
+            #opensubtitles-results-overlay *,
+            #opensubtitles-settings-overlay *,
+            #os-settings-notification,
+            #bilibili-subtitles-draggable * {
+                font-family: 'Nunito', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
+                font-size: var(--subtitle-font-size, 16px);
+            }
+            .os-modal {
+                animation: os-fade-in 0.2s ease-in-out;
+            }
+            @keyframes os-fade-in {
+                from { opacity: 0; transform: translateY(-10px); }
+                to   { opacity: 1; transform: translateY(0); }
+            }
+        </style>
+    `);
 
     openUiBtn = createLoginButton();
     openUiBtn.addEventListener("click", handleButtonClick);
     // document.getElementById("opensubtitles-login-btn")?.addEventListener("click", handleButtonClick);
-    createLoginModal();
-    createSearchModal();
-    createResultsModal();
+    loginOverlay = createLoginModal();
+    searchOverlay = createSearchModal();
+    resultsOverlay = createResultsModal();
     createSettingsModal();
     
     // Initialize modal manager for click-outside behavior and state preservation
@@ -78,18 +77,19 @@ function handleDocumentClick(event: MouseEvent): void {
     
     // Get all modal overlays
     const modalOverlays = [
-        document.getElementById('opensubtitles-login-overlay'),
-        document.getElementById('opensubtitles-search-overlay'),
-        document.getElementById('opensubtitles-results-overlay'),
-        document.getElementById('opensubtitles-settings-overlay'),
-        document.getElementById('subtitle-viewer-overlay')
+        loginOverlay,
+        searchOverlay,
+        resultsOverlay,
+        settingsOverlay,
+        subtitleViewerOverlay
     ].filter(Boolean);
     
-    // Check if any overlay is visible
-    const isAnyModalOpen = modalOverlays.some(overlay => 
-        overlay && window.getComputedStyle(overlay).display !== 'none');
+    // // Check if any overlay is visible
+    // const isAnyModalOpen = modalOverlays.some(overlay => 
+    //     overlay && window.getComputedStyle(overlay).display !== 'none');
     
-    if (!isAnyModalOpen) return;
+    if (!modalOverlays.some(overlay => 
+        overlay && window.getComputedStyle(overlay).display !== 'none')) return;
     
     // Check if click is inside a modal or on the button
     const isClickInsideModal = modalOverlays.some(overlay => 

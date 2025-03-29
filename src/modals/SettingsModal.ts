@@ -11,52 +11,149 @@ import {ActiveModal, setActiveModal} from './ModalManager'
 import {showSearchModal} from './SearchModal'
 import settingsModalTemplate from '../templates/settingsModal.html?raw';
 
-// These are moved from global scope in main.user.js to this module
+export let settingsOverlay: HTMLDivElement | null = null;
+export let settingsModal: HTMLDivElement | null = null;
+let notificationPopup: HTMLElement | null = null;
+
+let closeBtn: HTMLButtonElement | null = null;
+let backBtn: HTMLButtonElement | null = null;
+
+let userInfoContainer: HTMLElement | null = null;
+let refreshUserInfoBtn: HTMLButtonElement | null = null;
+
+let fontSizeDecreaseBtn: HTMLButtonElement | null = null;
+let fontSizeIncreaseBtn: HTMLButtonElement | null = null;
+let fontSizeValue: HTMLElement | null = null;
+let fontColorBtns: NodeListOf<HTMLElement> | null = null;
+let customFontColorPicker: HTMLInputElement | null = null;
+let hexFontColorInput: HTMLInputElement | null = null;
+let customFontColorContainer: HTMLElement | null = null;
+
+let bgToggle: HTMLInputElement | null = null;
+let bgToggleSpan: HTMLElement | null = null;
+let bgOptionsContainer: HTMLElement | null = null;
+let bgColorBtns: NodeListOf<HTMLElement> | null = null;
+let customBgColorPicker: HTMLInputElement | null = null;
+let customBgColorContainer: HTMLElement | null = null;
+let hexBgColorInput: HTMLInputElement | null = null;
+let bgOpacitySlider: HTMLInputElement | null = null;
+let bgOpacityValue: HTMLElement | null = null;
+
+let outlineToggle: HTMLInputElement | null = null;
+let outlineToggleSpan: HTMLElement | null = null;
+let outlineOptionsContainer: HTMLElement | null = null;
+let outlineColorBtns: NodeListOf<HTMLElement> | null = null;
+let customOutlineColorPicker: HTMLInputElement | null = null;
+let customOutlineColorContainer: HTMLElement | null = null;
+let hexOutlineColorInput: HTMLInputElement | null = null;
+
+let syncSlider: HTMLInputElement | null = null;
+let syncValueInput: HTMLInputElement | null = null;
+let syncResetBtn: HTMLButtonElement | null = null;
+
+let animationToggle: HTMLInputElement | null = null;
+let animationToggleSpan: HTMLElement | null = null;
+let animationOptionsContainer: HTMLElement | null = null;
+let animationTypeSelect: HTMLSelectElement | null = null;
+let animationDurationSlider: HTMLInputElement | null = null;
+let animationDurationValue: HTMLElement | null = null;
+
+let saveBtn: HTMLButtonElement | null = null;
+
+
 let currentFontColor = "#FFFFFF";
 let currentOutlineColor = "#000000";
 let currentBgColor = "#000000";
 
+
 export function createSettingsModal(): void {
-    const settingsOverlay = createDiv("opensubtitles-settings-overlay", "", `
+    const settingsOverlayDiv = createDiv("opensubtitles-settings-overlay", "", `
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background-color: rgba(0, 0, 0, 0.5); z-index: 10001; display: none;
         justify-content: center; align-items: center;
     `);
 
-    const settingsModal = createDiv("opensubtitles-settings-modal", "", `
+    const settingsModalDiv = createDiv("opensubtitles-settings-modal", "", `
         background-color: white; padding: 0; border-radius: 6px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); width: 500px; max-width: 90%;
         max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
     `);
 
-    const notificationPopup = createDiv("os-settings-notification", "Settings saved successfully!", `
+    settingsModalDiv.innerHTML = settingsModalTemplate;
+
+    const notificationPopupDiv = createDiv("os-settings-notification", "Settings saved successfully!", `
         position: fixed; top: 20px; right: 20px; background-color: #2ecc71;
         color: white; padding: 12px 20px; border-radius: 4px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); font-family: Arial, sans-serif;
         font-size: 14px; z-index: 10002; opacity: 0; transform: translateY(-20px);
         transition: all 0.3s ease; pointer-events: none;
     `);
-    document.body.appendChild(notificationPopup);
+    document.body.appendChild(notificationPopupDiv);
 
-    settingsModal.innerHTML = settingsModalTemplate;
-    settingsOverlay.appendChild(settingsModal);
-    document.body.appendChild(settingsOverlay);
+    settingsOverlayDiv.appendChild(settingsModalDiv);
+    document.body.appendChild(settingsOverlayDiv);
 
-    // Set up event listeners
+    settingsOverlay = settingsOverlayDiv;
+    settingsModal = settingsModalDiv;
+    notificationPopup = notificationPopupDiv;
+
+    closeBtn = settingsModal.querySelector("#os-settings-close-btn") as HTMLButtonElement;
+    backBtn = settingsModal.querySelector("#os-settings-back-btn") as HTMLButtonElement;
+
+    userInfoContainer = settingsModal.querySelector("#os-user-info") as HTMLElement;
+    refreshUserInfoBtn = settingsModal.querySelector("#os-refresh-user-info") as HTMLButtonElement;
+
+    fontSizeDecreaseBtn = settingsModal.querySelector("#os-font-size-decrease") as HTMLButtonElement;
+    fontSizeIncreaseBtn = settingsModal.querySelector("#os-font-size-increase") as HTMLButtonElement;
+    fontSizeValue = settingsModal.querySelector("#os-font-size-value") as HTMLElement;
+    fontColorBtns = settingsModal.querySelectorAll(".os-font-color-btn") as NodeListOf<HTMLElement>;
+    customFontColorPicker = settingsModal.querySelector("#os-custom-font-color") as HTMLInputElement;
+    hexFontColorInput = settingsModal.querySelector("#os-hex-color-input") as HTMLInputElement;
+    customFontColorContainer = settingsModal.querySelector("#os-custom-color-container") as HTMLElement;
+
+    bgToggle = settingsModal.querySelector("#os-bg-toggle") as HTMLInputElement;
+    bgToggleSpan = bgToggle?.nextElementSibling as HTMLElement | null;
+    bgOptionsContainer = settingsModal.querySelector("#os-bg-options") as HTMLElement;
+    bgColorBtns = settingsModal.querySelectorAll(".os-bg-color-btn") as NodeListOf<HTMLElement>;
+    customBgColorPicker = settingsModal.querySelector("#os-custom-bg-color") as HTMLInputElement;
+    customBgColorContainer = settingsModal.querySelector("#os-bg-color-container") as HTMLElement;
+    hexBgColorInput = settingsModal.querySelector("#os-bg-hex-color-input") as HTMLInputElement;
+    bgOpacitySlider = settingsModal.querySelector("#os-bg-opacity") as HTMLInputElement;
+    bgOpacityValue = settingsModal.querySelector("#os-bg-opacity-value") as HTMLElement;
+
+    outlineToggle = settingsModal.querySelector("#os-outline-toggle") as HTMLInputElement;
+    outlineToggleSpan = outlineToggle?.nextElementSibling as HTMLElement | null;
+    outlineOptionsContainer = settingsModal.querySelector("#os-outline-options") as HTMLElement;
+    outlineColorBtns = settingsModal.querySelectorAll(".os-outline-color-btn") as NodeListOf<HTMLElement>;
+    customOutlineColorPicker = settingsModal.querySelector("#os-custom-outline-color") as HTMLInputElement;
+    customOutlineColorContainer = settingsModal.querySelector("#os-outline-color-container") as HTMLElement;
+    hexOutlineColorInput = settingsModal.querySelector("#os-outline-hex-color-input") as HTMLInputElement;
+
+    syncSlider = settingsModal.querySelector("#os-sync-slider") as HTMLInputElement;
+    syncValueInput = settingsModal.querySelector("#os-sync-value") as HTMLInputElement;
+    syncResetBtn = settingsModal.querySelector("#os-sync-reset") as HTMLButtonElement;
+
+    animationToggle = settingsModal.querySelector("#os-animation-toggle") as HTMLInputElement;
+    animationToggleSpan = animationToggle?.nextElementSibling as HTMLElement | null;
+    animationOptionsContainer = settingsModal.querySelector("#os-animation-options") as HTMLElement;
+    animationTypeSelect = settingsModal.querySelector("#os-animation-type") as HTMLSelectElement;
+    animationDurationSlider = settingsModal.querySelector("#os-animation-duration") as HTMLInputElement;
+    animationDurationValue = settingsModal.querySelector("#os-animation-duration-value") as HTMLElement;
+
+    saveBtn = settingsModal.querySelector("#os-settings-save-btn") as HTMLButtonElement;
+
     setupSettingsEventListeners();
 }
 
+
 function setupSettingsEventListeners(): void {
-    // Close button
-    document.getElementById("os-settings-close-btn")?.addEventListener("click", hideSettingsModal);
-    document.getElementById("os-settings-back-btn")?.addEventListener("click", backSettingsModal);
+    closeBtn?.addEventListener("click", hideSettingsModal);
+    backBtn?.addEventListener("click", backSettingsModal);
 
-    // Font size controls
-    document.getElementById("os-font-size-decrease")?.addEventListener("click", () => updateFontSize(-1));
-    document.getElementById("os-font-size-increase")?.addEventListener("click", () => updateFontSize(1));
+    fontSizeDecreaseBtn?.addEventListener("click", () => updateFontSize(-1));
+    fontSizeIncreaseBtn?.addEventListener("click", () => updateFontSize(1));
 
-    // Font color controls
-    document.querySelectorAll(".os-font-color-btn").forEach(btn => {
+    fontColorBtns?.forEach(btn => {
         btn.addEventListener("click", e => {
             const target = e.target as HTMLElement;
             if (target.dataset.color) {
@@ -66,89 +163,78 @@ function setupSettingsEventListeners(): void {
         });
     });
 
-    document.getElementById("os-custom-font-color")?.addEventListener("input", e => {
+    customFontColorPicker?.addEventListener("input", e => {
         const target = e.target as HTMLInputElement;
         setFontColor(target.value);
         clearFontColorSelection();
-        (document.getElementById("os-hex-color-input") as HTMLInputElement).value = target.value.replace('#', '');
-        document.getElementById("os-custom-color-container")!.style.border = "2px solid #00a1d6";
+        if (hexFontColorInput) hexFontColorInput.value = target.value.replace('#', '');
+        if (customFontColorContainer) customFontColorContainer.style.border = "2px solid #00a1d6";
     });
 
-    document.getElementById("os-hex-color-input")?.addEventListener("input", e => handleHexColorInput(e, 'font'));
+    hexFontColorInput?.addEventListener("input", e => handleHexColorInput(e, 'font'));
 
+    bgToggle?.addEventListener("change", handleBgToggle);
 
-    // Background toggle
-    document.getElementById("os-bg-toggle")?.addEventListener("change", handleBgToggle);
-
-    // Background color controls
-    document.querySelectorAll(".os-bg-color-btn").forEach(btn => {
+    bgColorBtns?.forEach(btn => {
         btn.addEventListener("click", e => {
             const target = e.target as HTMLElement;
             if (target.dataset.color) {
                 setBgColor(target.dataset.color);
                 highlightSelectedBgColor(target.dataset.color);
-                (document.getElementById("os-bg-hex-color-input") as HTMLInputElement).value = target.dataset.color.replace('#', '');
+                if (hexBgColorInput) hexBgColorInput.value = target.dataset.color.replace('#', '');
             }
         });
     });
 
-    document.getElementById("os-custom-bg-color")?.addEventListener("input", handleBgColorPicker);
-    document.getElementById("os-bg-hex-color-input")?.addEventListener("input", e => handleHexColorInput(e, 'bg'));
+    customBgColorPicker?.addEventListener("input", handleBgColorPicker);
+    hexBgColorInput?.addEventListener("input", e => handleHexColorInput(e, 'bg'));
 
-    // Background opacity
-    document.getElementById("os-bg-opacity")?.addEventListener("input", e => {
+    bgOpacitySlider?.addEventListener("input", e => {
         const target = e.target as HTMLInputElement;
         const value = target.value;
-        const valueElement = document.getElementById("os-bg-opacity-value");
-        if (valueElement) valueElement.textContent = value;
+        if (bgOpacityValue) bgOpacityValue.textContent = value;
         saveSettingsDebounced();
     });
 
-    // Outline toggle
-    document.getElementById("os-outline-toggle")?.addEventListener("change", handleOutlineToggle);
+    outlineToggle?.addEventListener("change", handleOutlineToggle);
 
-    // Outline color controls
-    document.querySelectorAll(".os-outline-color-btn").forEach(btn => {
+    outlineColorBtns?.forEach(btn => {
         btn.addEventListener("click", e => {
             const target = e.target as HTMLElement;
             if (target.dataset.color) {
                 setOutlineColor(target.dataset.color);
                 highlightSelectedOutlineColor(target.dataset.color);
-                (document.getElementById("os-outline-hex-color-input") as HTMLInputElement).value = target.dataset.color.replace('#', '');
+                if (hexOutlineColorInput) hexOutlineColorInput.value = target.dataset.color.replace('#', '');
             }
         });
     });
 
-    document.getElementById("os-custom-outline-color")?.addEventListener("input", handleOutlineColorPickerInput);
-    document.getElementById("os-outline-hex-color-input")?.addEventListener("input", e => handleHexColorInput(e, 'outline'));
-    // Sync controls
-    document.getElementById("os-sync-slider")?.addEventListener("input", e => {
+    customOutlineColorPicker?.addEventListener("input", handleOutlineColorPickerInput);
+    hexOutlineColorInput?.addEventListener("input", e => handleHexColorInput(e, 'outline'));
+
+    syncSlider?.addEventListener("input", e => {
         const target = e.target as HTMLInputElement;
-        (document.getElementById("os-sync-value") as HTMLInputElement).value = target.value;
+        if (syncValueInput) syncValueInput.value = target.value;
         saveSettingsDebounced();
     });
 
-    document.getElementById("os-sync-value")?.addEventListener("input", handleSyncValueInput);
-    document.getElementById("os-sync-reset")?.addEventListener("click", resetSyncSettings);
+    syncValueInput?.addEventListener("input", handleSyncValueInput);
+    syncResetBtn?.addEventListener("click", resetSyncSettings);
 
-    // Animation controls
-    document.getElementById("os-animation-toggle")?.addEventListener("change", handleAnimationToggle);
-    document.getElementById("os-animation-type")?.addEventListener("change", saveSettingsDebounced);
-    document.getElementById("os-animation-duration")?.addEventListener("input", e => {
+    animationToggle?.addEventListener("change", handleAnimationToggle);
+    animationTypeSelect?.addEventListener("change", saveSettingsDebounced);
+    animationDurationSlider?.addEventListener("input", e => {
         const target = e.target as HTMLInputElement;
-        const valueElement = document.getElementById("os-animation-duration-value");
-        if (valueElement) valueElement.textContent = `${target.value}s`;
+        if (animationDurationValue) animationDurationValue.textContent = `${target.value}s`;
         saveSettingsDebounced();
     });
 
-    // Refresh user info button
-    document.getElementById("os-refresh-user-info")?.addEventListener("click", () => refreshUserInfo(true));
+    refreshUserInfoBtn?.addEventListener("click", () => refreshUserInfo(true));
 
-    // Save button
-    document.getElementById("os-settings-save-btn")?.addEventListener("click", saveAllSettings);
+    saveBtn?.addEventListener("click", saveAllSettings);
 }
 
-// Format UTC date to local time with AM/PM
+
 function formatUTCtoLocalTime(utcTimeString: string): string {
     if (!utcTimeString) return "Unknown";
 
@@ -171,13 +257,12 @@ function formatUTCtoLocalTime(utcTimeString: string): string {
 }
 
 async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
-    const refreshBtn = document.getElementById("os-refresh-user-info") as HTMLButtonElement;
-    if (refreshBtn && showRefreshedIndicator) {
-        // Set button to loading state
-        refreshBtn.textContent = "Refreshing...";
-        refreshBtn.disabled = true;
-        refreshBtn.style.backgroundColor = "#f0f0f0";
-        refreshBtn.style.color = "#999";
+    const btn = refreshUserInfoBtn;
+    if (btn && showRefreshedIndicator) {
+        btn.textContent = "Refreshing...";
+        btn.disabled = true;
+        btn.style.backgroundColor = "#f0f0f0";
+        btn.style.color = "#999";
     }
 
     try {
@@ -188,59 +273,53 @@ async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
         }
         const userData = await getUserInfo(tokenData);
         if (userData) {
-            // Store user data with timestamp
             await saveUserInfoToDB(userData);
-            // Update UI with new data
             updateUserInfoUI(userData);
 
-            // Show success state
-            if (refreshBtn && showRefreshedIndicator) {
-                refreshBtn.textContent = "Updated!";
-                refreshBtn.style.backgroundColor = "#e8f5e9";
-                refreshBtn.style.color = "#2e7d32";
-                refreshBtn.style.borderColor = "#c8e6c9";
-                refreshBtn.disabled = false;
+            if (btn && showRefreshedIndicator) {
+                btn.textContent = "Updated!";
+                btn.style.backgroundColor = "#e8f5e9";
+                btn.style.color = "#2e7d32";
+                btn.style.borderColor = "#c8e6c9";
+                btn.disabled = false;
             }
         } else {
-            // Show error state
-            if (refreshBtn) {
-                refreshBtn.textContent = "Failed to Update";
-                refreshBtn.style.backgroundColor = "#ffebee";
-                refreshBtn.style.color = "#c62828";
-                refreshBtn.style.borderColor = "#ef9a9a";
-                refreshBtn.disabled = false;
+            if (btn) {
+                btn.textContent = "Failed to Update";
+                btn.style.backgroundColor = "#ffebee";
+                btn.style.color = "#c62828";
+                btn.style.borderColor = "#ef9a9a";
+                btn.disabled = false;
             }
         }
     } catch (error) {
         console.error("Error refreshing user info:", error);
 
-        // Show error state
-        if (refreshBtn) {
-            refreshBtn.textContent = "Error";
-            refreshBtn.style.backgroundColor = "#ffebee";
-            refreshBtn.style.color = "#c62828";
-            refreshBtn.style.borderColor = "#ef9a9a";
-            refreshBtn.disabled = false;
+        if (btn) {
+            btn.textContent = "Error";
+            btn.style.backgroundColor = "#ffebee";
+            btn.style.color = "#c62828";
+            btn.style.borderColor = "#ef9a9a";
+            btn.disabled = false;
         }
     } finally {
-        // Reset button after delay
         setTimeout(() => {
-            if (refreshBtn) {
-                refreshBtn.textContent = "Refresh Information";
-                refreshBtn.style.backgroundColor = "#f0f0f0";
-                refreshBtn.style.color = "#666";
-                refreshBtn.style.borderColor = "#ddd";
-                refreshBtn.disabled = false;
+            if (btn) {
+                btn.textContent = "Refresh Information";
+                btn.style.backgroundColor = "#f0f0f0";
+                btn.style.color = "#666";
+                btn.style.borderColor = "#ddd";
+                btn.disabled = false;
             }
         }, 2000);
     }
 }
 
 function updateUserInfoUI(userData: any) {
-    const userInfoElement = document.getElementById("os-user-info");
+    const container = userInfoContainer;
     if (!userData || !userData.data) {
-        if (userInfoElement) {
-            userInfoElement.innerHTML = `
+        if (container) {
+            container.innerHTML = `
                 <div style="color: #e74c3c; font-size: 14px; text-align: center;">
                     No user information found.<br>
                     Please try refreshing.
@@ -250,31 +329,31 @@ function updateUserInfoUI(userData: any) {
         return;
     }
 
-    if (userInfoElement) {
-        userInfoElement.innerHTML = `
+    if (container) {
+        container.innerHTML = `
             <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-family: Arial, sans-serif; font-size: 14px;">
                 <div><strong>Status:</strong></div>
                 <div>
-                    ${userData.data.level || "Unknown"} 
+                    ${userData.data.level || "Unknown"}
                     ${
             userData.data.vip
                 ? '<span id="os-user-vip-badge" style="background-color: #ffc107; color: #000; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">VIP</span>'
                 : ""
         }
                 </div>
-                
+
                 <div><strong>Downloads:</strong></div>
                 <div>${userData.data.downloads_count || "0"} / ${
             userData.data.allowed_downloads || "0"
         } (${userData.data.remaining_downloads || "0"} remaining)</div>
-                
+
                 <div><strong>Reset Time:</strong></div>
                 <div>${
             userData.data && userData.data.reset_time_utc
                 ? formatUTCtoLocalTime(userData.data.reset_time_utc)
                 : "Unknown. Download to show."
         }</div>
-                
+
                 <div><strong>Last Update:</strong></div>
                 <div>${userData.timestamp ? new Date(userData.timestamp).toLocaleString() : "Never"}</div>
             </div>
@@ -282,14 +361,12 @@ function updateUserInfoUI(userData: any) {
     }
 }
 
-// Helper for handling bg toggle changes
 function handleBgToggle(e: Event): void {
     const target = e.target as HTMLInputElement;
     const isChecked = target.checked;
     updateBgOptionsVisibility(isChecked);
 
-    // Update the visual appearance of the toggle
-    const toggleSpan = target.nextElementSibling as HTMLElement;
+    const toggleSpan = bgToggleSpan;
     if (toggleSpan) {
         toggleSpan.style.backgroundColor = isChecked ? "#00a1d6" : "#ccc";
         const toggleDot = toggleSpan.querySelector("span") as HTMLElement;
@@ -301,24 +378,21 @@ function handleBgToggle(e: Event): void {
     saveSettingsDebounced();
 }
 
-// Handle background color picker input
 function handleBgColorPicker(e: Event): void {
     const target = e.target as HTMLInputElement;
     setBgColor(target.value);
     clearBgColorSelection();
-    (document.getElementById("os-bg-hex-color-input") as HTMLInputElement).value = target.value.replace('#', '');
-    document.getElementById("os-bg-color-container")!.style.border = "2px solid #00a1d6";
+    if (hexBgColorInput) hexBgColorInput.value = target.value.replace('#', '');
+    if (customBgColorContainer) customBgColorContainer.style.border = "2px solid #00a1d6";
     saveSettingsDebounced();
 }
 
-// Helper for handling outline toggle changes
 function handleOutlineToggle(e: Event): void {
     const target = e.target as HTMLInputElement;
     const isChecked = target.checked;
     updateOutlineOptionsVisibility(isChecked);
 
-    // Update the visual appearance of the toggle
-    const toggleSpan = target.nextElementSibling as HTMLElement;
+    const toggleSpan = outlineToggleSpan;
     if (toggleSpan) {
         toggleSpan.style.backgroundColor = isChecked ? "#00a1d6" : "#ccc";
         const toggleDot = toggleSpan.querySelector("span") as HTMLElement;
@@ -330,14 +404,12 @@ function handleOutlineToggle(e: Event): void {
     saveSettingsDebounced();
 }
 
-// Helper for handling animation toggle changes
 function handleAnimationToggle(e: Event): void {
     const target = e.target as HTMLInputElement;
     const isChecked = target.checked;
     updateAnimationOptionsVisibility(isChecked);
 
-    // Update the visual appearance of the toggle
-    const toggleSpan = target.nextElementSibling as HTMLElement;
+    const toggleSpan = animationToggleSpan;
     if (toggleSpan) {
         toggleSpan.style.backgroundColor = isChecked ? "#00a1d6" : "#ccc";
         const toggleDot = toggleSpan.querySelector("span") as HTMLElement;
@@ -359,191 +431,164 @@ function handleHexColorInput(e: Event, colorType: 'font' | 'bg' | 'outline'): vo
             case 'font':
                 setFontColor(color);
                 clearFontColorSelection();
-                (document.getElementById("os-custom-font-color") as HTMLInputElement).value = color;
-                document.getElementById("os-custom-color-container")!.style.border = "2px solid #00a1d6";
-                // apply the color to the subtitle UI
-
+                if (customFontColorPicker) customFontColorPicker.value = color;
+                if (hexFontColorInput) hexFontColorInput.value = color.replace('#', '');
+                if (customFontColorContainer) customFontColorContainer.style.border = "2px solid #00a1d6";
                 break;
             case 'bg':
                 setBgColor(color);
                 clearBgColorSelection();
-                (document.getElementById("os-custom-bg-color") as HTMLInputElement).value = color;
-                document.getElementById("os-bg-color-container")!.style.border = "2px solid #00a1d6";
+                if (customBgColorPicker) customBgColorPicker.value = color;
+                if (hexBgColorInput) hexBgColorInput.value = color.replace('#', '');
+                if (customBgColorContainer) customBgColorContainer.style.border = "2px solid #00a1d6";
                 break;
             case 'outline':
                 setOutlineColor(color);
                 clearOutlineColorSelection();
-                (document.getElementById("os-custom-outline-color") as HTMLInputElement).value = color;
-                document.getElementById("os-outline-color-container")!.style.border = "2px solid #00a1d6";
+                 if (customOutlineColorPicker) customOutlineColorPicker.value = color;
+                if (hexOutlineColorInput) hexOutlineColorInput.value = color.replace('#', '');
+                if (customOutlineColorContainer) customOutlineColorContainer.style.border = "2px solid #00a1d6";
                 break;
         }
-        // refresh the subtitles UI to apply the colors
-
         saveSettingsDebounced();
     }
 }
 
-// Handle outline color picker input
 function handleOutlineColorPickerInput(e: Event): void {
     const target = e.target as HTMLInputElement;
     setOutlineColor(target.value);
     clearOutlineColorSelection();
-    (document.getElementById("os-outline-hex-color-input") as HTMLInputElement).value = target.value.replace('#', '');
-    document.getElementById("os-outline-color-container")!.style.border = "2px solid #00a1d6";
+    if (hexOutlineColorInput) hexOutlineColorInput.value = target.value.replace('#', '');
+    if (customOutlineColorContainer) customOutlineColorContainer.style.border = "2px solid #00a1d6";
     saveSettingsDebounced();
 }
 
-// Handle sync value input
 function handleSyncValueInput(e: Event): void {
     const target = e.target as HTMLInputElement;
-    // const value = parseFloat(target.value);
-    // if (value >= -30 && value <= 30) {
-    //     (document.getElementById("os-sync-slider") as HTMLInputElement).value = target.value;
-    // } else if (value < -30) {
-    //     target.value = "-30";
-    //     (document.getElementById("os-sync-slider") as HTMLInputElement).value = "-30";
-    // } else if (value > 30) {
-    //     target.value = "30";
-    //     (document.getElementById("os-sync-slider") as HTMLInputElement).value = "30";
-    // }
-    (document.getElementById("os-sync-slider") as HTMLInputElement).value = target.value;
+    if (syncSlider) syncSlider.value = target.value;
     saveSettingsDebounced();
 }
 
-// Reset sync settings
 function resetSyncSettings(): void {
-    (document.getElementById("os-sync-slider") as HTMLInputElement).value = "0";
-    (document.getElementById("os-sync-value") as HTMLInputElement).value = "0";
+    if (syncSlider) syncSlider.value = "0";
+    if (syncValueInput) syncValueInput.value = "0";
     saveSettingsDebounced();
 }
 
-// Set font color and highlight
 function setFontColor(color: string): void {
     currentFontColor = color;
     saveSettingsDebounced();
 }
 
-// Highlight selected font color
 function highlightSelectedFontColor(selectedColor: string): void {
     clearFontColorSelection();
-    const colorBtns = document.querySelectorAll(".os-font-color-btn");
+    const colorBtns = fontColorBtns;
 
-    colorBtns.forEach(btn => {
+    let presetSelected = false;
+    colorBtns?.forEach(btn => {
         const btnElement = btn as HTMLElement;
         if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
             btnElement.style.border = "2px solid #00a1d6";
+            presetSelected = true;
         }
     });
 
-    if (!Array.from(colorBtns).some(btn => {
-        const btnElement = btn as HTMLElement;
-        return btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase();
-    })) {
-        document.getElementById("os-custom-color-container")!.style.border = "2px solid #00a1d6";
+    if (!presetSelected && customFontColorContainer) {
+        customFontColorContainer.style.border = "2px solid #00a1d6";
     }
 }
 
-// Clear font color selection
 function clearFontColorSelection(): void {
-    document.querySelectorAll(".os-font-color-btn").forEach(btn => {
+    fontColorBtns?.forEach(btn => {
         (btn as HTMLElement).style.border = "1px solid #ddd";
     });
-    document.getElementById("os-custom-color-container")!.style.border = "1px solid #ddd";
+    if (customFontColorContainer) {
+        customFontColorContainer.style.border = "1px solid #ddd";
+    }
 }
 
-// Set background color
 function setBgColor(color: string): void {
     currentBgColor = color;
     saveSettingsDebounced();
 }
 
-// Highlight selected bg color
 function highlightSelectedBgColor(selectedColor: string): void {
     clearBgColorSelection();
-    const colorBtns = document.querySelectorAll(".os-bg-color-btn");
+    const colorBtns = bgColorBtns;
 
-    colorBtns.forEach(btn => {
+    let presetSelected = false;
+    colorBtns?.forEach(btn => {
         const btnElement = btn as HTMLElement;
         if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
             btnElement.style.border = "2px solid #00a1d6";
+            presetSelected = true;
         }
     });
 
-    if (!Array.from(colorBtns).some(btn => {
-        const btnElement = btn as HTMLElement;
-        return btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase();
-    })) {
-        document.getElementById("os-bg-color-container")!.style.border = "2px solid #00a1d6";
+    if (!presetSelected && customBgColorContainer) {
+        customBgColorContainer.style.border = "2px solid #00a1d6";
     }
 }
 
-// Clear bg color selection
 function clearBgColorSelection(): void {
-    document.querySelectorAll(".os-bg-color-btn").forEach(btn => {
+    bgColorBtns?.forEach(btn => {
         (btn as HTMLElement).style.border = "1px solid #ddd";
     });
-    document.getElementById("os-bg-color-container")!.style.border = "1px solid #ddd";
+    if (customBgColorContainer) {
+        customBgColorContainer.style.border = "1px solid #ddd";
+    }
 }
 
-// Set outline color
 function setOutlineColor(color: string): void {
     currentOutlineColor = color;
     saveSettingsDebounced();
 }
 
-// Highlight selected outline color
 function highlightSelectedOutlineColor(selectedColor: string): void {
     clearOutlineColorSelection();
-    const colorBtns = document.querySelectorAll(".os-outline-color-btn");
+    const colorBtns = outlineColorBtns;
 
-    colorBtns.forEach(btn => {
+    let presetSelected = false;
+    colorBtns?.forEach(btn => {
         const btnElement = btn as HTMLElement;
         if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
             btnElement.style.border = "2px solid #00a1d6";
+            presetSelected = true;
         }
     });
 
-    if (!Array.from(colorBtns).some(btn => {
-        const btnElement = btn as HTMLElement;
-        return btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase();
-    })) {
-        document.getElementById("os-outline-color-container")!.style.border = "2px solid #00a1d6";
+    if (!presetSelected && customOutlineColorContainer) {
+        customOutlineColorContainer.style.border = "2px solid #00a1d6";
     }
 }
 
-// Clear outline color selection
 function clearOutlineColorSelection(): void {
-    document.querySelectorAll(".os-outline-color-btn").forEach(btn => {
+    outlineColorBtns?.forEach(btn => {
         (btn as HTMLElement).style.border = "1px solid #ddd";
     });
-    document.getElementById("os-outline-color-container")!.style.border = "1px solid #ddd";
+    if (customOutlineColorContainer) {
+        customOutlineColorContainer.style.border = "1px solid #ddd";
+    }
 }
 
-// Update visibility of background options
 function updateBgOptionsVisibility(isVisible: boolean): void {
-    const bgOptions = document.getElementById("os-bg-options");
-    if (bgOptions) {
-        bgOptions.style.display = isVisible ? "block" : "none";
+    if (bgOptionsContainer) {
+        bgOptionsContainer.style.display = isVisible ? "block" : "none";
     }
 }
 
-// Update visibility of outline options
 function updateOutlineOptionsVisibility(isVisible: boolean): void {
-    const outlineOptions = document.getElementById("os-outline-options");
-    if (outlineOptions) {
-        outlineOptions.style.display = isVisible ? "block" : "none";
+    if (outlineOptionsContainer) {
+        outlineOptionsContainer.style.display = isVisible ? "block" : "none";
     }
 }
 
-// Update visibility of animation options
 function updateAnimationOptionsVisibility(isVisible: boolean): void {
-    const animationOptions = document.getElementById("os-animation-options");
-    if (animationOptions) {
-        animationOptions.style.display = isVisible ? "block" : "none";
+    if (animationOptionsContainer) {
+        animationOptionsContainer.style.display = isVisible ? "block" : "none";
     }
 }
 
-// Debounce helper to prevent too many saves
 let saveTimeout: number | null = null;
 
 function saveSettingsDebounced(): void {
@@ -556,19 +601,15 @@ function saveSettingsDebounced(): void {
 }
 
 async function saveAllSettingsInternal(): Promise<void> {
-    // Get settings from the UI
     const settings = getSettingsFromUI();
 
-    // Update global variables with the new settings
     currentFontColor = settings.fontColor;
     currentOutlineColor = settings.outlineColor;
     currentBgColor = settings.bgColor;
     (window as any).subtitleSyncOffset = settings.syncOffset;
 
     try {
-        // Save settings to IndexedDB
         await saveSettingsToIndexedDB(settings);
-        // check if subtitles exist and update them with the new settings
     } catch (error) {
         console.error('Error saving settings:', error);
     }
@@ -576,8 +617,8 @@ async function saveAllSettingsInternal(): Promise<void> {
 
 async function saveAllSettings(): Promise<void> {
     await saveAllSettingsInternal();
-    
-    const notification = document.getElementById("os-settings-notification");
+
+    const notification = notificationPopup;
     if (notification) {
         notification.style.opacity = "1";
         notification.style.transform = "translateY(0)";
@@ -591,81 +632,77 @@ async function saveAllSettings(): Promise<void> {
     hideSettingsModal();
 }
 
-// Get settings from UI
 function getSettingsFromUI(): any {
     return {
-        fontSize: parseInt((document.getElementById("os-font-size-value")?.textContent || "16").replace("px", "")),
-        fontColor: currentFontColor || "#FFFFFF",
-        bgEnabled: (document.getElementById("os-bg-toggle") as HTMLInputElement)?.checked || false,
-        bgColor: currentBgColor || "#000000",
-        bgOpacity: parseFloat((document.getElementById("os-bg-opacity") as HTMLInputElement)?.value || "0.5"),
-        outlineEnabled: (document.getElementById("os-outline-toggle") as HTMLInputElement)?.checked || false,
-        outlineColor: currentOutlineColor || "#000000",
-        syncOffset: parseFloat((document.getElementById("os-sync-value") as HTMLInputElement)?.value || "0"),
-        animationEnabled: (document.getElementById("os-animation-toggle") as HTMLInputElement).checked,
-        animationType: (document.getElementById("os-animation-type") as HTMLSelectElement)?.value || "fade",
-        animationDuration: parseFloat((document.getElementById("os-animation-duration") as HTMLInputElement)?.value || "0.3")
+        fontSize: parseInt(fontSizeValue?.textContent || "16"),
+        fontColor: currentFontColor,
+        bgEnabled: bgToggle?.checked || false,
+        bgColor: currentBgColor,
+        bgOpacity: parseFloat(bgOpacitySlider?.value || "0.5"),
+        outlineEnabled: outlineToggle?.checked || false,
+        outlineColor: currentOutlineColor,
+        syncOffset: parseFloat(syncValueInput?.value || "0"),
+        animationEnabled: animationToggle?.checked ?? true,
+        animationType: animationTypeSelect?.value || "fade",
+        animationDuration: parseFloat(animationDurationSlider?.value || "0.3")
     };
 }
 
 export async function showSettingsModal() {
+    if (!settingsOverlay) {
+        console.error("Settings modal not created yet!");
+        return;
+    }
+
     updateSettingsUI(await loadSettingsFromIndexedDB());
 
-    const userInfoElement = document.getElementById("os-user-info");
-    // Check if "Last Update:" displays "Never"
-    if (userInfoElement && !/Last Update:\s*Never/i.test(userInfoElement.textContent || "")) {
+    const container = userInfoContainer;
+    if (container && !/Last Update:\s*Never/i.test(container.textContent || "")) {
         console.log("[Subtitles Selector] User info already loaded. Skipping update.");
     } else {
         console.log("[Subtitles Selector] Loading user info from db");
 
         let userData = await getUserInfoFromDB();
-        // If no user info is found, force a refresh from the API
         if (!userData || !userData.data) {
             console.log("[Subtitles Selector] No user info found, refreshing...");
             await refreshUserInfo(false);
-            userData = await getUserInfoFromDB();
+        } else {
+             updateUserInfoUI(userData);
         }
-        updateUserInfoUI(userData);
-        console.log("[Subtitles Selector] Updated user info");
+        console.log("[Subtitles Selector] Updated user info (or initiated refresh)");
     }
 
-    const overlay = document.getElementById("opensubtitles-settings-overlay");
-    if (overlay) overlay.style.display = "flex";
+    settingsOverlay.style.display = "flex";
     setActiveModal(ActiveModal.SETTINGS);
 }
 
+export function hideSettingsModal(): void {
+    if (settingsOverlay) settingsOverlay.style.display = "none";
+    setActiveModal(ActiveModal.NONE);
+}
+
 export async function backSettingsModal() {
-    const overlay = document.getElementById("opensubtitles-settings-overlay");
-    if (overlay) overlay.style.display = "none";
-    setActiveModal(ActiveModal.SEARCH);
+    hideSettingsModal();
     showSearchModal();
 }
 
-// Update UI based on loaded settings
 function updateSettingsUI(settings: any): void {
-    // Update variables first
     currentFontColor = settings?.fontColor || "#FFFFFF";
     currentOutlineColor = settings?.outlineColor || "#000000";
     currentBgColor = settings?.bgColor || "#000000";
 
-    // Font size
-    const fontSizeValue = document.getElementById("os-font-size-value");
     if (fontSizeValue) {
         fontSizeValue.textContent = `${settings?.fontSize || 16}px`;
     }
 
-    // Font color
-    (document.getElementById("os-custom-font-color") as HTMLInputElement).value = settings?.fontColor || "#FFFFFF";
-    (document.getElementById("os-hex-color-input") as HTMLInputElement).value = (settings?.fontColor || "#FFFFFF").replace('#', '');
-    highlightSelectedFontColor(settings?.fontColor || "#FFFFFF");
+    if (customFontColorPicker) customFontColorPicker.value = currentFontColor;
+    if (hexFontColorInput) hexFontColorInput.value = currentFontColor.replace('#', '');
+    highlightSelectedFontColor(currentFontColor);
 
-    // Background
     const bgEnabled = settings?.bgEnabled === true;
-    (document.getElementById("os-bg-toggle") as HTMLInputElement).checked = bgEnabled;
+    if (bgToggle) bgToggle.checked = bgEnabled;
     updateBgOptionsVisibility(bgEnabled);
 
-    // Update toggle appearance
-    const bgToggleSpan = document.getElementById("os-bg-toggle")?.nextElementSibling as HTMLElement;
     if (bgToggleSpan) {
         bgToggleSpan.style.backgroundColor = bgEnabled ? "#00a1d6" : "#ccc";
         const toggleDot = bgToggleSpan.querySelector("span") as HTMLElement;
@@ -674,24 +711,19 @@ function updateSettingsUI(settings: any): void {
         }
     }
 
-    // Background color and opacity
-    (document.getElementById("os-custom-bg-color") as HTMLInputElement).value = settings?.bgColor || "#000000";
-    (document.getElementById("os-bg-hex-color-input") as HTMLInputElement).value = (settings?.bgColor || "#000000").replace('#', '');
-    highlightSelectedBgColor(settings?.bgColor || "#000000");
+    if (customBgColorPicker) customBgColorPicker.value = currentBgColor;
+    if (hexBgColorInput) hexBgColorInput.value = currentBgColor.replace('#', '');
+    highlightSelectedBgColor(currentBgColor);
 
-    (document.getElementById("os-bg-opacity") as HTMLInputElement).value = `${settings?.bgOpacity || 0.5}`;
-    const bgOpacityValue = document.getElementById("os-bg-opacity-value");
-    if (bgOpacityValue) {
-        bgOpacityValue.textContent = `${settings?.bgOpacity || 0.5}`;
-    }
+    const bgOpacity = settings?.bgOpacity ?? 0.5;
+    if (bgOpacitySlider) bgOpacitySlider.value = `${bgOpacity}`;
+    if (bgOpacityValue) bgOpacityValue.textContent = `${bgOpacity}`;
 
-    // Outline
+
     const outlineEnabled = settings?.outlineEnabled === true;
-    (document.getElementById("os-outline-toggle") as HTMLInputElement).checked = outlineEnabled;
+    if (outlineToggle) outlineToggle.checked = outlineEnabled;
     updateOutlineOptionsVisibility(outlineEnabled);
 
-    // Update toggle appearance
-    const outlineToggleSpan = document.getElementById("os-outline-toggle")?.nextElementSibling as HTMLElement;
     if (outlineToggleSpan) {
         outlineToggleSpan.style.backgroundColor = outlineEnabled ? "#00a1d6" : "#ccc";
         const toggleDot = outlineToggleSpan.querySelector("span") as HTMLElement;
@@ -700,24 +732,22 @@ function updateSettingsUI(settings: any): void {
         }
     }
 
-    // Outline color
-    (document.getElementById("os-custom-outline-color") as HTMLInputElement).value = settings?.outlineColor || "#000000";
-    (document.getElementById("os-outline-hex-color-input") as HTMLInputElement).value = (settings?.outlineColor || "#000000").replace('#', '');
+    if (customOutlineColorPicker) customOutlineColorPicker.value = currentOutlineColor;
+    if (hexOutlineColorInput) hexOutlineColorInput.value = currentOutlineColor.replace('#', '');
     if (outlineEnabled) {
-        highlightSelectedOutlineColor(settings?.outlineColor || "#000000");
+        highlightSelectedOutlineColor(currentOutlineColor);
+    } else {
+        clearOutlineColorSelection();
     }
 
-    // Sync offset
-    (document.getElementById("os-sync-slider") as HTMLInputElement).value = `${settings?.syncOffset || 0}`;
-    (document.getElementById("os-sync-value") as HTMLInputElement).value = `${settings?.syncOffset || 0}`;
+    const syncOffset = settings?.syncOffset || 0;
+    if (syncSlider) syncSlider.value = `${syncOffset}`;
+    if (syncValueInput) syncValueInput.value = `${syncOffset}`;
 
-    // Animation
     const animationEnabled = settings?.animationEnabled !== false;
-    (document.getElementById("os-animation-toggle") as HTMLInputElement).checked = animationEnabled;
+    if (animationToggle) animationToggle.checked = animationEnabled;
     updateAnimationOptionsVisibility(animationEnabled);
 
-    // Update toggle appearance
-    const animationToggleSpan = document.getElementById("os-animation-toggle")?.nextElementSibling as HTMLElement;
     if (animationToggleSpan) {
         animationToggleSpan.style.backgroundColor = animationEnabled ? "#00a1d6" : "#ccc";
         const toggleDot = animationToggleSpan.querySelector("span") as HTMLElement;
@@ -726,40 +756,29 @@ function updateSettingsUI(settings: any): void {
         }
     }
 
-    // Animation type and duration
-    (document.getElementById("os-animation-type") as HTMLSelectElement).value = settings?.animationType || "fade";
-    (document.getElementById("os-animation-duration") as HTMLInputElement).value = `${settings?.animationDuration || 0.3}`;
-    const animationDurationValue = document.getElementById("os-animation-duration-value");
-    if (animationDurationValue) {
-        animationDurationValue.textContent = `${settings?.animationDuration || 0.3}s`;
-    }
+    const animationType = settings?.animationType || "fade";
+    const animationDuration = settings?.animationDuration ?? 0.3;
+    if (animationTypeSelect) animationTypeSelect.value = animationType;
+    if (animationDurationSlider) animationDurationSlider.value = `${animationDuration}`;
+    if (animationDurationValue) animationDurationValue.textContent = `${animationDuration}s`;
+
 }
 
 async function updateFontSize(change: number): Promise<void> {
     const settings = await loadSettingsFromIndexedDB();
     const currentSize = settings?.fontSize || 16;
-    const newSize = Math.max(8, Math.min(32, currentSize + change)); // Limit font size between 8-32px
+    const newSize = Math.max(8, Math.min(32, currentSize + change));
 
-    // Update the font size display in the settings modal for feedback
-    const fontSizeValue = document.getElementById("os-font-size-value");
     if (fontSizeValue) {
         fontSizeValue.textContent = `${newSize}px`;
     }
 
-    // Update stored settings immediately
     await saveSettingsToIndexedDB({
         ...settings,
         fontSize: newSize
     });
 
-    // Apply the change to the subtitle elements (instead of the modal styles)
     document.querySelectorAll(".subtitle").forEach(subtitle => {
         (subtitle as HTMLElement).style.fontSize = `${newSize}px`;
     });
-}
-
-export function hideSettingsModal(): void {
-    const overlay = document.getElementById("opensubtitles-settings-overlay");
-    if (overlay) overlay.style.display = "none";
-    setActiveModal(ActiveModal.SEARCH);
 }

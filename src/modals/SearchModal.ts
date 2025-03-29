@@ -6,26 +6,27 @@ import { updatePaginationState, updateResults, showResultsModal, setSearchParams
 import { getToken } from '../db/indexedDB';
 import { setActiveModal, ActiveModal } from './ModalManager.ts';
 
-
-export function createSearchModal(): void {
+export function createSearchModal(): HTMLDivElement {
     const searchOverlay = createDiv("opensubtitles-search-overlay", "", `
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background-color: rgba(0, 0, 0, 0.5); z-index: 10000; display: none;
         justify-content: center; align-items: center;
     `);
 
-    const searchModal = createDiv("opensubtitles-search-modal", "", `
+    const searchModalDiv = createDiv("opensubtitles-search-modal", "", `
         background-color: white; padding: 0; border-radius: 6px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); width: 500px; max-width: 90%;
         max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
     `);
 
-    searchModal.innerHTML = searchModalTemplate;
-    searchOverlay.appendChild(searchModal);
+    searchModalDiv.innerHTML = searchModalTemplate;
+    searchOverlay.appendChild(searchModalDiv);
     document.body.appendChild(searchOverlay);
 
     // Set up event listeners
     setupEventListeners();
+
+    return searchOverlay;
 }
 
 function setupEventListeners(): void {

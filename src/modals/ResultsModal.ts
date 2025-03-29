@@ -6,6 +6,9 @@ import {fetchSubtitleData} from '../api/openSubtitles';
 import {hideSubtitleViewer, showSubtitleViewer} from './SubtitleViewerModal';
 import {applySubtitleToVideo, clearExistingSubtitles} from '../utils/subtitleRenderer';
 import {ActiveModal, setActiveModal} from './ModalManager';
+import { settingsOverlay } from './SettingsModal';
+
+export let resultsModal: HTMLDivElement;
 
 // Track pagination state
 let currentSearchResults: any[] = [];
@@ -16,8 +19,9 @@ let perPage: number = 50;
 let currentSearchQuery: string = "";
 let currentSearchParams: string | null = null;
 
-export async function createResultsModal(): Promise<void> {
-    if (document.getElementById("opensubtitles-results-overlay")) return;
+export function createResultsModal(): HTMLDivElement | null {
+    // if (document.getElementById("opensubtitles-results-overlay")) return null;
+    if (settingsOverlay) return null;
 
     const resultsOverlay = createDiv("opensubtitles-results-overlay", "", `
         position: fixed;
@@ -32,7 +36,7 @@ export async function createResultsModal(): Promise<void> {
         align-items: center;
     `);
 
-    const resultsModal = createDiv("opensubtitles-results-modal", "", `
+    const resultsModalDiv = createDiv("opensubtitles-results-modal", "", `
         background-color: white;
         padding: 0;
         border-radius: 6px;
@@ -45,8 +49,8 @@ export async function createResultsModal(): Promise<void> {
         overflow: hidden;
     `);
 
-    resultsModal.innerHTML = resultsModalTemplate;
-    resultsOverlay.appendChild(resultsModal);
+    resultsModalDiv.innerHTML = resultsModalTemplate;
+    resultsOverlay.appendChild(resultsModalDiv);
     document.body.appendChild(resultsOverlay);
     
     // Prevent clicks on the overlay from closing the modal unintentionally
@@ -58,7 +62,7 @@ export async function createResultsModal(): Promise<void> {
     });
     
     // Prevent clicks inside the modal from bubbling to the overlay
-    resultsModal.addEventListener("click", (e: MouseEvent) => {
+    resultsModalDiv.addEventListener("click", (e: MouseEvent) => {
         e.stopPropagation();
     });
 
@@ -69,6 +73,8 @@ export async function createResultsModal(): Promise<void> {
     if (prevBtn) prevBtn.addEventListener("click", () => navigateResults("prev"));
     if (nextBtn) nextBtn.addEventListener("click", () => navigateResults("next"));
     if (backBtn) backBtn.addEventListener("click", backToSearch);
+
+    return resultsOverlay;
 }
 
 export function showResultsModal(page?: number): void {

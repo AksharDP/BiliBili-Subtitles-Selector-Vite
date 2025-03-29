@@ -6,6 +6,8 @@ import { openUiBtn } from '../main.ts';
 import { showSearchModal } from './SearchModal.ts';
 import {ActiveModal, setActiveModal} from "./ModalManager.ts"; // Import the HTML
 
+export let loginModal: HTMLDivElement;
+
 export function createLoginButton(): HTMLButtonElement {
     const button = createButton("opensubtitles-login-btn", "OpenSubtitles Login", undefined, `
         position: fixed; bottom: 20px; right: 20px; z-index: 9999;
@@ -18,7 +20,7 @@ export function createLoginButton(): HTMLButtonElement {
     return button;
 }
 
-export function createLoginModal(): void {
+export function createLoginModal(): HTMLDivElement {
     const loginOverlay = createDiv(
         "opensubtitles-login-overlay",
         "",
@@ -36,7 +38,7 @@ export function createLoginModal(): void {
         `
     );
 
-    const loginModal = createDiv(
+    const loginModalDiv = createDiv(
         "opensubtitles-login-modal",
         "",
         `
@@ -49,8 +51,8 @@ export function createLoginModal(): void {
         `
     );
 
-    loginModal.innerHTML = loginModalTemplate;
-    loginOverlay.appendChild(loginModal);
+    loginModalDiv.innerHTML = loginModalTemplate;
+    loginOverlay.appendChild(loginModalDiv);
     document.body.appendChild(loginOverlay);
 
     const loginForm = document.getElementById("opensubtitles-login-form");
@@ -67,6 +69,8 @@ export function createLoginModal(): void {
     } else {
         console.error("Cancel button not found");
     }
+
+    return loginOverlay;
 }
 
 export function showLoginModal(): void {
