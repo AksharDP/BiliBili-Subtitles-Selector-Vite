@@ -1,11 +1,12 @@
 import {createDiv} from '../ui/components';
 import subtitleViewerTemplate from '../templates/SubtitleViewer.html?raw';
-import {checkSubtitleInCache, getToken, loadSettingsFromIndexedDB} from '../db/indexedDB';
+import {checkSubtitleInCache, getToken, loadSettingsFromIndexedDB, saveSettingsToIndexedDB} from '../db/indexedDB';
 import {fetchSubtitleData} from '../api/openSubtitles';
 import {setupSubtitleDisplay} from '../utils/subtitleDisplay';
 import {ActiveModal, setActiveModal} from './ModalManager';
+import { updateCacheStatusDisplay as updateResultsCacheStatus, resultsModal, resultsOverlay } from './ResultsModal';
 
-// Store timestamps for syncing
+
 interface TimestampInfo {
     startTime: number;
     endTime: number;
@@ -14,91 +15,75 @@ interface TimestampInfo {
     text: string;
 }
 
-/**
- * Create the subtitle viewer modal
- */
+export let subtitleViewerOverlay: HTMLDivElement | null = null;
+export let subtitleViewerModal: HTMLDivElement | null = null;
+let closeBtn: HTMLButtonElement | null = null;
+let copyBtn: HTMLButtonElement | null = null;
+let syncBtn: HTMLButtonElement | null = null;
+let subtitleContentArea: HTMLTextAreaElement | null = null;
+let loadingIndicator: HTMLElement | null = null;
+let viewerTitleElement: HTMLElement | null = null;
+let syncStatusElement: HTMLElement | null = null;
+let cacheIndicatorElement: HTMLElement | null = null;
+
+declare global {
+    interface Window {
+        subtitleTimestamps: TimestampInfo[];
+        // subtitleSyncOffset: number | undefined;
+        activeCues: any[] | undefined;
+        currentActiveModal: ActiveModal | undefined;
+    }
+}
+
+
 export function createSubtitleViewer(): void {
     if (document.getElementById("subtitle-viewer-overlay")) return;
-    
-    // Create overlay container - transparent to allow interaction with elements underneath
-    const viewerOverlay = createDiv(
-        "subtitle-viewer-overlay",
-        "",
-        `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 0;
-        height: 100%;
-        background-color: transparent;
-        z-index: 9999;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        pointer-events: none;
-        `
+
+    const overlayDiv = createDiv(
+        "subtitle-viewer-overlay", "",
+        `position: fixed; top: 0; left: 0; width: 0; height: 100%; background-color: transparent;
+         z-index: 9999; display: none; justify-content: center; align-items: center; pointer-events: none;`
     );
 
-    // Create content container with initial position off-screen
-    const viewerContent = createDiv(
-        "subtitle-viewer-content",
-        "",
-        `
-        background-color: white;
-        padding: 0;
-        border-radius: 6px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        width: 500px;
-        max-width: 90%;
-        height: 80vh;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        opacity: 0;
-        position: absolute;
-        pointer-events: auto;
-        transition: transform 0.3s ease, opacity 0.3s ease;
-        `
+    const modalDiv = createDiv(
+        "subtitle-viewer-content", "",
+        `background-color: white; padding: 0; border-radius: 6px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+         width: 500px; max-width: 90%; height: 80vh; display: flex; flex-direction: column; overflow: hidden;
+         opacity: 0; position: absolute; pointer-events: auto; transition: transform 0.3s ease, opacity 0.3s ease;`
     );
-    
-    // Add the HTML template
-    viewerContent.innerHTML = subtitleViewerTemplate;
-    
-    // Add to the DOM
-    viewerOverlay.appendChild(viewerContent);
-    document.body.appendChild(viewerOverlay);
-    
-    // Add event listeners
-    document.getElementById("subtitle-viewer-close-btn")?.addEventListener("click", hideSubtitleViewer);
-    document.getElementById("subtitle-copy-btn")?.addEventListener("click", copySubtitleToClipboard);
-    document.getElementById("subtitle-sync")?.addEventListener("click", autoSyncSubtitles);
-    
-    // Add click handler for timestamps in textarea
-    document.getElementById("subtitle-content")?.addEventListener("click", handleTimestampClick);
-    
-    // Add animation styles if not already present
+
+    modalDiv.innerHTML = subtitleViewerTemplate;
+    overlayDiv.appendChild(modalDiv);
+    document.body.appendChild(overlayDiv);
+
+    subtitleViewerOverlay = overlayDiv;
+    subtitleViewerModal = modalDiv;
+    closeBtn = subtitleViewerModal.querySelector("#subtitle-viewer-close-btn") as HTMLButtonElement;
+    copyBtn = subtitleViewerModal.querySelector("#subtitle-copy-btn") as HTMLButtonElement;
+    syncBtn = subtitleViewerModal.querySelector("#subtitle-sync") as HTMLButtonElement;
+    subtitleContentArea = subtitleViewerModal.querySelector("#subtitle-content") as HTMLTextAreaElement;
+    loadingIndicator = subtitleViewerModal.querySelector("#subtitle-loading") as HTMLElement;
+    viewerTitleElement = subtitleViewerModal.querySelector("#subtitle-viewer-title") as HTMLElement;
+    syncStatusElement = subtitleViewerModal.querySelector("#subtitle-sync-status") as HTMLElement;
+    cacheIndicatorElement = subtitleViewerModal.querySelector("#subtitle-cache-indicator") as HTMLElement;
+
+    closeBtn?.addEventListener("click", hideSubtitleViewer);
+    copyBtn?.addEventListener("click", copySubtitleToClipboard);
+    syncBtn?.addEventListener("click", autoSyncSubtitles);
+    subtitleContentArea?.addEventListener("click", handleTimestampClick);
+
+
     if (!document.getElementById("subtitle-viewer-styles")) {
         const style = document.createElement("style");
         style.id = "subtitle-viewer-styles";
         style.textContent = `
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            
-            /* Style for timestamp highlighting */
-            .timestamp-highlight {
-                background-color: #ffff99;
-                cursor: pointer;
-            }
-        `;
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            .timestamp-highlight { background-color: #ffff99; cursor: pointer; }`;
         document.head.appendChild(style);
     }
 }
 
-/**
- * Show the subtitle viewer with content for the specified subtitle
- */
+
 export function showSubtitleViewer(resultElement: HTMLElement): void {
     const osViewBtn = resultElement.querySelector('.os-view-btn') as HTMLElement;
     const subtitleId = osViewBtn?.dataset.subtitleId || '';
@@ -106,445 +91,372 @@ export function showSubtitleViewer(resultElement: HTMLElement): void {
         console.error("Invalid subtitle ID:", subtitleId);
         return;
     }
-    // Check if already showing this subtitle to prevent recursion
-    const currentViewer = document.getElementById("subtitle-viewer-overlay");
-    if (currentViewer && currentViewer.style.display === "flex" && 
-        currentViewer.dataset.currentSubtitle === subtitleId) {
-        console.log("Already showing this subtitle, preventing duplicate call");
+
+    if (subtitleViewerOverlay && subtitleViewerOverlay.style.display === "flex" && subtitleViewerOverlay.dataset.currentSubtitle === subtitleId) {
+        console.log("Already showing this subtitle.");
         return;
     }
-    
-    createSubtitleViewer(); // Ensure the viewer exists
-    
-    const resultsModal = document.getElementById("opensubtitles-results-modal");
-    const resultsOverlay = document.getElementById("opensubtitles-results-overlay");
-    const viewerOverlay = document.getElementById("subtitle-viewer-overlay");
-    const viewerContent = document.getElementById("subtitle-viewer-content");
-    const loading = document.getElementById("subtitle-loading");
-    const content = document.getElementById("subtitle-content") as HTMLTextAreaElement;
-    const title = document.getElementById("subtitle-viewer-title");
-    
-    if (!viewerOverlay || !viewerContent || !loading || !content || !title || !resultsModal || !resultsOverlay) {
-        console.error("Required elements not found");
+
+    createSubtitleViewer();
+
+    const resModal = resultsModal;
+    const resOverlay = resultsOverlay;
+
+    const vOverlay = subtitleViewerOverlay;
+    const vContent = subtitleViewerModal;
+    const loadingEl = loadingIndicator;
+    const contentArea = subtitleContentArea;
+    const titleEl = viewerTitleElement;
+
+    if (!vOverlay || !vContent || !loadingEl || !contentArea || !titleEl || !resModal || !resOverlay) {
+        console.error("Required elements (viewer or results) not found or initialized");
         return;
     }
-    
-    // Store current subtitle ID to prevent multiple calls
-    viewerOverlay.dataset.currentSubtitle = subtitleId;
-    
-    // Fix the textarea styling to prevent horizontal scrollbar
-    content.style.whiteSpace = "pre-wrap";
-    content.style.overflowWrap = "break-word";
-    content.style.overflowX = "hidden";
-    
-    // Set the active modal for state tracking - mark both modals as active
+
+    vOverlay.dataset.currentSubtitle = subtitleId;
+
+    contentArea.style.whiteSpace = "pre-wrap";
+    contentArea.style.overflowWrap = "break-word";
+    contentArea.style.overflowX = "hidden";
+
     setActiveModal(ActiveModal.SUBTITLE_VIEWER, { subtitleId, resultsVisible: true });
-    
-    // Calculate window center and position modals side by side
+
     const windowWidth = window.innerWidth;
     const resultsWidth = 500;
     const viewerWidth = 500;
     const gap = 20;
     const totalWidth = resultsWidth + viewerWidth + gap;
     const startPositionX = Math.max(20, (windowWidth - totalWidth) / 2);
-    
-    // CRITICAL FIXES:
-    
-    // 1. Make sure we don't manipulate the results overlay directly - it should stay as is
-    resultsOverlay.style.pointerEvents = "none"; // Allow clicks to pass through the overlay
-    
-    // 2. Set up viewer overlay with pointer-events properly configured
-    viewerOverlay.style.backgroundColor = "transparent";
-    viewerOverlay.style.width = "100%";
-    viewerOverlay.style.height = "100%";
-    viewerOverlay.style.display = "flex";
-    viewerOverlay.style.pointerEvents = "none"; // Allow clicks to pass through overlay
-    viewerOverlay.style.zIndex = "10000";
-    
-    // 3. Position the results modal and ensure it stays visible
-    resultsModal.style.position = "fixed";
-    resultsModal.style.left = `${startPositionX}px`;
-    resultsModal.style.top = "50%";
-    resultsModal.style.transform = "translateY(-50%)";
-    resultsModal.style.margin = "0";
-    resultsModal.style.zIndex = "10001";
-    resultsModal.style.width = `${resultsWidth}px`;
-    resultsModal.style.pointerEvents = "auto"; // Ensure results modal captures clicks
-    
-    // 4. Position the viewer content and ensure it captures clicks
-    viewerContent.style.position = "fixed";
-    viewerContent.style.left = `${startPositionX + resultsWidth + gap}px`;
-    viewerContent.style.top = "50%";
-    viewerContent.style.transform = "translateY(-50%)";
-    viewerContent.style.margin = "0";
-    viewerContent.style.opacity = "0";
-    viewerContent.style.zIndex = "10002";
-    viewerContent.style.width = `${viewerWidth}px`;
-    viewerContent.style.pointerEvents = "auto"; // Ensure content captures clicks
-    
-    // Load subtitle content with better debugging - using setTimeout to ensure UI updates first
+
+    resOverlay.style.pointerEvents = "none";
+
+    vOverlay.style.backgroundColor = "transparent";
+    vOverlay.style.width = "100%";
+    vOverlay.style.height = "100%";
+    vOverlay.style.display = "flex";
+    vOverlay.style.pointerEvents = "none";
+    vOverlay.style.zIndex = "10000";
+
+    resModal.style.position = "fixed";
+    resModal.style.left = `${startPositionX}px`;
+    resModal.style.top = "50%";
+    resModal.style.transform = "translateY(-50%)";
+    resModal.style.margin = "0";
+    resModal.style.zIndex = "10001";
+    resModal.style.width = `${resultsWidth}px`;
+    resModal.style.pointerEvents = "auto";
+
+    vContent.style.position = "fixed";
+    vContent.style.left = `${startPositionX + resultsWidth + gap}px`;
+    vContent.style.top = "50%";
+    vContent.style.transform = "translateY(-50%)";
+    vContent.style.margin = "0";
+    vContent.style.opacity = "0";
+    vContent.style.zIndex = "10002";
+    vContent.style.width = `${viewerWidth}px`;
+    vContent.style.pointerEvents = "auto";
+
     setTimeout(() => {
-        // Animate viewer fading in
-        viewerContent.style.transition = "opacity 0.3s ease";
-        viewerContent.style.opacity = "1";
-        
-        // Show loading state
-        loading.style.display = "flex";
-        content.value = "";
-        
-        // Load subtitle content
+        vContent.style.transition = "opacity 0.3s ease";
+        vContent.style.opacity = "1";
+
+        loadingEl.style.display = "flex";
+        contentArea.value = "";
+
         loadSubtitleContent(subtitleId)
             .then(data => {
-                console.log("Subtitle data loaded:", !!data);
-                console.log(data);
                 if (data && data.content) {
-                    // Display the subtitle content
-                    title.textContent = data.title || data.fileName || "Subtitle Content";
-                    content.value = data.content;
-                    
-                    // Process the subtitle for timestamp detection
+                    titleEl.textContent = data.title || data.fileName || "Subtitle Content";
+                    contentArea.value = data.content;
+
                     const timestamps = processSubtitleTimestamps(data.content);
                     window.subtitleTimestamps = timestamps;
-                    
-                    // Update the sync status with timestamp count
-                    const syncStatus = document.getElementById("subtitle-sync-status");
-                    if (syncStatus) {
-                        syncStatus.textContent = `Found ${timestamps.length} timestamps. Click any timestamp to sync with video.`;
-                    }
 
-                    // Turn the indicator green if not already green
-                    const indicator = document.getElementById("subtitle-cache-indicator");
-                    if (indicator && indicator.style.backgroundColor !== "green") {
-                        indicator.style.backgroundColor = "green";
+                    if (syncStatusElement) {
+                        syncStatusElement.textContent = `Found ${timestamps.length} timestamps. Click any timestamp to sync with video.`;
+                    }
+                    if (cacheIndicatorElement && cacheIndicatorElement.style.backgroundColor !== "green") {
                     }
                 } else {
-                    // Detailed error when content isn't available
-                    content.value = `No subtitle content found.\n\nData object: ${typeof data}\nHas content: ${!!(data && data.content)}\n\n${JSON.stringify(data, null, 2)}`;
+                    contentArea.value = `No subtitle content found.\n\n${JSON.stringify(data, null, 2)}`;
                 }
             })
             .catch(error => {
                 console.error("Error loading subtitle:", error);
-                content.value = `Error: ${error.message || "Failed to load subtitle"}`;
+                contentArea.value = `Error: ${error.message || "Failed to load subtitle"}`;
+                 if (syncStatusElement) {
+                    syncStatusElement.textContent = "Error loading subtitle.";
+                 }
             })
             .finally(() => {
-                loading.style.display = "none";
+                loadingEl.style.display = "none";
             });
     }, 10);
 }
 
-/**
- * Hide the subtitle viewer
- */
 export function hideSubtitleViewer(): void {
-    const resultsModal = document.getElementById("opensubtitles-results-modal");
-    const resultsOverlay = document.getElementById("opensubtitles-results-overlay");
-    const viewerContent = document.getElementById("subtitle-viewer-content");
-    const viewerOverlay = document.getElementById("subtitle-viewer-overlay");
-    
-    if (!viewerContent || !viewerOverlay || !resultsModal || !resultsOverlay) return;
-    
-    // Remove stored subtitle ID
-    if (viewerOverlay.dataset.currentSubtitle) {
-        delete viewerOverlay.dataset.currentSubtitle;
+    const resModal = resultsModal;
+    const resOverlay = resultsOverlay;
+    const vContent = subtitleViewerModal;
+    const vOverlay = subtitleViewerOverlay;
+
+    if (!vContent || !vOverlay || !resModal || !resOverlay) return;
+
+    if (vOverlay.dataset.currentSubtitle) {
+        delete vOverlay.dataset.currentSubtitle;
     }
-    
-    // Fade out the viewer content
-    viewerContent.style.opacity = "0";
-    
-    // Reset everything after animation completes
+
+    vContent.style.opacity = "0";
+
     setTimeout(() => {
-        viewerOverlay.style.display = "none";
-        viewerOverlay.style.width = "0";
-        
-        // CRITICAL FIX: Properly restore pointer events
-        resultsOverlay.style.pointerEvents = "auto";
-        resultsModal.style.pointerEvents = "auto";
-        
-        // Reset all positioning
-        resultsModal.style.position = "";
-        resultsModal.style.left = "";
-        resultsModal.style.top = "";
-        resultsModal.style.transform = "";
-        resultsModal.style.margin = "";
-        resultsModal.style.width = "";
-        resultsModal.style.zIndex = "";
-        resultsModal.style.transition = "";
-        
-        // Clear content
-        const content = document.getElementById("subtitle-content") as HTMLTextAreaElement;
-        if (content) content.value = "";
-        
-        const syncStatus = document.getElementById("subtitle-sync-status");
-        if (syncStatus) syncStatus.textContent = "";
-        
-        // Restore the active modal state to just the results
-        setActiveModal(ActiveModal.RESULTS);
-    }, 300); // Match transition duration
+        vOverlay.style.display = "none";
+        vOverlay.style.width = "0";
+
+        resOverlay.style.pointerEvents = "auto";
+        resModal.style.pointerEvents = "auto";
+
+        resModal.style.position = "";
+        resModal.style.left = "";
+        resModal.style.top = "";
+        resModal.style.transform = "";
+        resModal.style.margin = "";
+        resModal.style.width = "";
+        resModal.style.zIndex = "";
+        resModal.style.transition = "";
+
+        if (subtitleContentArea) subtitleContentArea.value = "";
+        if (syncStatusElement) syncStatusElement.textContent = "";
+
+        if (getActiveModal() === ActiveModal.SUBTITLE_VIEWER) {
+             setActiveModal(ActiveModal.RESULTS);
+        }
+
+    }, 300);
 }
 
-/**
- * Load subtitle content with caching
- */
+
 async function loadSubtitleContent(subtitleId: string): Promise<any> {
     try {
-        // Try to get from cache first
         const cachedSubtitle = await checkSubtitleInCache(subtitleId);
-        
         if (cachedSubtitle) {
             console.log("Found subtitle in cache:", subtitleId);
-            
-            // Even for cached subtitles, update the indicator (might be from another session)
-            setTimeout(() => {
-                import('./ResultsModal').then(module => {
-                    module.updateCacheStatusDisplay(subtitleId);
-                });
-            }, 300);
-            
+            setTimeout(() => updateResultsCacheStatus(subtitleId), 300);
             return cachedSubtitle;
         }
-        
+
         console.log("Subtitle not in cache, fetching from API:", subtitleId);
-        
-        // Get current search results from ResultsModal
-        const resultsModal = await import('./ResultsModal');
-        const results = resultsModal.getCurrentSearchResults();
-        console.log("Current search results:", results.length);
-        
-        // Not in cache, find in search results and download
-        // const result = results.find((r: any) => r.id === subtitleId);
-        // if (!result) {
-        //     throw new Error("Subtitle not found in current results");
-        // }
-        
         const tokenData = await getToken();
         if (!tokenData) {
             throw new Error("Authentication required");
         }
-        
-        // Download and cache the subtitle
+
         const subtitleData = await fetchSubtitleData(tokenData, subtitleId);
-        
-        // Update cache status with a slight delay to ensure DOM is stable
-        setTimeout(() => {
-            import('./ResultsModal').then(module => {
-                module.updateCacheStatusDisplay(subtitleId);
-            });
-        }, 300);
-        
+        setTimeout(() => updateResultsCacheStatus(subtitleId), 300);
         return subtitleData;
+
     } catch (error) {
         console.error("Error loading subtitle content:", error);
         throw error;
     }
 }
 
-/**
- * Process subtitle to identify timestamps
- */
 function processSubtitleTimestamps(content: string): TimestampInfo[] {
     if (!content) return [];
-    
-    const timestampRegex = /(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})/g;
+    const timestampRegex = /(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/g;
     const timestamps: TimestampInfo[] = [];
     let match;
-    
+
     while ((match = timestampRegex.exec(content)) !== null) {
+        const textStartIndex = match.index + match[0].length;
+        let nextMatchIndex = content.indexOf('\n\n', textStartIndex);
+        if (nextMatchIndex === -1) {
+           nextMatchIndex = content.length;
+        }
+         let textEndIndex = nextMatchIndex;
+         const potentialNextNumberMatch = /^\d+\s*$/m.exec(content.substring(textStartIndex, textEndIndex));
+         if (potentialNextNumberMatch) {
+             textEndIndex = textStartIndex + potentialNextNumberMatch.index;
+         }
+
+        const subtitleText = content.substring(textStartIndex, textEndIndex).trim();
+
         timestamps.push({
             startTime: timeToSeconds(match[1]),
             endTime: timeToSeconds(match[2]),
             startIndex: match.index,
-            endIndex: match.index + match[0].length,
-            text: match[0]
+            endIndex: textEndIndex,
+            text: subtitleText
         });
     }
-    
     return timestamps;
 }
 
-/**
- * Handle click on timestamp in subtitle content
- */
-function handleTimestampClick(e: MouseEvent): void {
-    const textarea = e.target as HTMLTextAreaElement;
+
+function handleTimestampClick(): void {
+    const textarea = subtitleContentArea;
     if (!textarea || !window.subtitleTimestamps?.length) return;
-    
-    // Get click position in textarea content
-    const clickPosition = getTextareaClickPosition(textarea, e);
-    
-    // Find timestamp at this position
-    const timestamp = window.subtitleTimestamps.find(t => 
+
+    const clickPosition = getTextareaClickPosition(textarea);
+    const timestamp = window.subtitleTimestamps.find(t =>
         clickPosition >= t.startIndex && clickPosition <= t.endIndex);
-    
     if (!timestamp) return;
-    
-    // Get current video time
+
     const videoPlayer = document.querySelector('video');
     if (!videoPlayer) return;
-    
-    // Calculate the offset between video time and subtitle time
+
     const offset = videoPlayer.currentTime - timestamp.startTime;
-    
-    // Update global sync offset
     window.subtitleSyncOffset = offset;
-    
-    // Update settings
+
     loadSettingsFromIndexedDB().then(settings => {
-        settings.syncOffset = offset;
-        // saveSettingsToIndexedDB(settings);
-        
-        // Update sync status
-        const syncStatus = document.getElementById("subtitle-sync-status");
-        if (syncStatus) {
-            syncStatus.textContent = `Synced! Offset: ${offset.toFixed(2)}s`;
+        const newSettings = { ...settings, syncOffset: offset };
+        saveSettingsToIndexedDB(newSettings);
+
+        if (syncStatusElement) {
+            syncStatusElement.textContent = `Synced! Offset: ${offset.toFixed(2)}s`;
+             syncStatusElement.style.color = '#2ecc71';
         }
-        
-        // Apply the new offset to current subtitles if they're visible
+
         const textElement = document.querySelector("[id^='bilibili-subtitles-text-']");
-        if (textElement && window.activeCues) {
+        if (textElement && window.activeCues && videoPlayer) {
             setupSubtitleDisplay(window.activeCues, videoPlayer, textElement);
         }
-    });
+    }).catch(error => console.error("Failed to save sync offset:", error));
 }
 
-/**
- * Helper function to get click position in textarea
- */
-function getTextareaClickPosition(textarea: HTMLTextAreaElement, e: MouseEvent): number {
-    const style = window.getComputedStyle(textarea);
-    const fontSize = parseFloat(style.fontSize);
-    const lineHeight = fontSize * 1.2; // Approximate line height
-    
-    // Get coordinates relative to textarea
-    const rect = textarea.getBoundingClientRect();
-    const x = e.clientX - rect.left + textarea.scrollLeft;
-    const y = e.clientY - rect.top + textarea.scrollTop;
-    
-    // Calculate line and character position
-    const lineIndex = Math.floor(y / lineHeight);
-    const charIndex = Math.floor(x / (fontSize * 0.6)); // Approximate character width
-    
-    // Convert to absolute position in text
-    const lines = textarea.value.split('\n');
-    let position = 0;
-    
-    // Add up all characters in previous lines
-    for (let i = 0; i < lineIndex && i < lines.length; i++) {
-        position += lines[i].length + 1; // +1 for the newline
-    }
-    
-    // Add characters in current line
-    if (lineIndex < lines.length) {
-        position += Math.min(charIndex, lines[lineIndex].length);
-    }
-    
-    return position;
-}
 
-/**
- * Auto sync with current video position
- */
-function autoSyncSubtitles(): void {
-    const textarea = document.getElementById("subtitle-content") as HTMLTextAreaElement;
-    if (!textarea) {
-        const syncStatus = document.getElementById("subtitle-sync-status");
-        if (syncStatus) {
-            syncStatus.textContent = "No subtitle content element found.";
+function getTextareaClickPosition(textarea: HTMLTextAreaElement): number {
+    if (typeof textarea.selectionStart === 'number') {
+        try {
+             return textarea.selectionStart;
+        } catch(err) {
+             console.warn("Error estimating textarea click position, using selectionStart", err);
+             return textarea.selectionStart ?? 0;
         }
+    }
+     console.warn("Cannot determine textarea click position accurately.");
+    return 0;
+}
+
+
+function autoSyncSubtitles(): void {
+    const textarea = subtitleContentArea;
+    const syncStatusEl = syncStatusElement;
+
+    if (!textarea) {
+        if (syncStatusEl) syncStatusEl.textContent = "Subtitle content area not found.";
         return;
     }
-    
-    // Get the current cursor position in the textarea
+
     const cursorPos = textarea.selectionStart;
     if (cursorPos === null || isNaN(cursorPos)) {
-        const syncStatus = document.getElementById("subtitle-sync-status");
-        if (syncStatus) {
-            syncStatus.textContent = "Unable to determine cursor position.";
-        }
+        if (syncStatusEl) syncStatusEl.textContent = "Cannot determine cursor position.";
         return;
     }
-    
+
     if (!window.subtitleTimestamps?.length) {
-        const syncStatus = document.getElementById("subtitle-sync-status");
-        if (syncStatus) {
-            syncStatus.textContent = "No timestamps found for syncing.";
-        }
+        if (syncStatusEl) syncStatusEl.textContent = "No timestamps processed for syncing.";
         return;
     }
-    
-    // Try to find a timestamp that covers the cursor position
+
     let selectedTimestamp = window.subtitleTimestamps.find(ts => cursorPos >= ts.startIndex && cursorPos <= ts.endIndex);
-    
-    // If not found, find the closest timestamp based on startIndex
+
     if (!selectedTimestamp) {
-        selectedTimestamp = window.subtitleTimestamps.reduce((prev, curr) => {
-            return (Math.abs(cursorPos - prev.startIndex) <= Math.abs(cursorPos - curr.startIndex)) ? prev : curr;
-        });
+        selectedTimestamp = window.subtitleTimestamps
+            .filter(ts => ts.startTime !== undefined)
+            .reduce((prev, curr) =>
+                Math.abs(cursorPos - prev.startIndex) <= Math.abs(cursorPos - curr.startIndex) ? prev : curr
+            );
     }
-    
+     if (!selectedTimestamp || selectedTimestamp.startTime === undefined) {
+         if (syncStatusEl) syncStatusEl.textContent = "Could not find a valid timestamp near cursor.";
+         return;
+     }
+
+
     const videoPlayer = document.querySelector('video');
     if (!videoPlayer) {
-        const syncStatus = document.getElementById("subtitle-sync-status");
-        if (syncStatus) {
-            syncStatus.textContent = "Error: Video player not found!";
-        }
+        if (syncStatusEl) syncStatusEl.textContent = "Video player not found.";
         return;
     }
-    
+
     const currentVideoTime = videoPlayer.currentTime;
-    
-    // Calculate the offset from the timestamp time to the current video time
     const offset = currentVideoTime - selectedTimestamp.startTime;
     window.subtitleSyncOffset = offset;
-    
+
     loadSettingsFromIndexedDB().then(settings => {
-        settings.syncOffset = offset;
-        // saveSettingsToIndexedDB(settings);
-        
-        // Update UI
-        const syncStatus = document.getElementById("subtitle-sync-status");
-        if (syncStatus) {
-            syncStatus.textContent = `Cursor sync applied! Offset: ${offset.toFixed(2)}s`;
+        const newSettings = { ...settings, syncOffset: offset };
+        saveSettingsToIndexedDB(newSettings);
+
+        if (syncStatusEl) {
+            syncStatusEl.textContent = `Synced at cursor! Offset: ${offset.toFixed(2)}s`;
+            syncStatusEl.style.color = '#2ecc71';
         }
-        
-        // Refresh subtitle display
+
         const textElement = document.querySelector("[id^='bilibili-subtitles-text-']");
-        if (textElement && window.activeCues) {
+        if (textElement && window.activeCues && videoPlayer) {
             setupSubtitleDisplay(window.activeCues, videoPlayer, textElement);
         }
+    }).catch(error => {
+        console.error("Failed to save sync offset:", error);
+         if (syncStatusEl) {
+            syncStatusEl.textContent = `Error saving sync offset.`;
+            syncStatusEl.style.color = '#e74c3c';
+         }
     });
 }
 
-/**
- * Copy subtitle content to clipboard
- */
+
 function copySubtitleToClipboard(): void {
-    const textarea = document.getElementById("subtitle-content") as HTMLTextAreaElement;
-    if (!textarea || !textarea.textContent) return;
-    navigator.clipboard.writeText(textarea.textContent);
-    // Show feedback
-    const statusElement = document.getElementById("subtitle-sync-status");
-    if (statusElement) {
-        const originalText = statusElement.textContent || "";
-        statusElement.textContent = "Copied to clipboard!";
-        
-        // Reset after a delay
-        setTimeout(() => {
-            statusElement.textContent = originalText;
-        }, 2000);
+    const textarea = subtitleContentArea;
+    const statusEl = syncStatusElement;
+
+    if (!textarea || !textarea.value) {
+         if (statusEl) statusEl.textContent = "Nothing to copy.";
+         return;
+    }
+
+    navigator.clipboard.writeText(textarea.value)
+        .then(() => {
+            if (statusEl) {
+                const originalText = statusEl.textContent || "";
+                statusEl.textContent = "Copied to clipboard!";
+                statusEl.style.color = '#2ecc71';
+                setTimeout(() => {
+                     statusEl.textContent = originalText.startsWith("Synced") || originalText.startsWith("Found") ? originalText : "";
+                     statusEl.style.color = '';
+                }, 2000);
+            }
+        })
+        .catch(err => {
+            console.error('Failed to copy text: ', err);
+            if (statusEl) {
+                 statusEl.textContent = "Failed to copy!";
+                 statusEl.style.color = '#e74c3c';
+            }
+        });
+}
+
+
+function timeToSeconds(timeString: string): number {
+    try {
+        const parts = timeString.split(':');
+        const secondsAndMillis = parts[2].split(',');
+        const hours = parseInt(parts[0], 10);
+        const minutes = parseInt(parts[1], 10);
+        const seconds = parseInt(secondsAndMillis[0], 10);
+        const milliseconds = parseInt(secondsAndMillis[1], 10);
+
+        if (isNaN(hours) || isNaN(minutes) || isNaN(seconds) || isNaN(milliseconds)) {
+            throw new Error("Invalid time component");
+        }
+
+        return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+    } catch (e) {
+        console.error(`Error parsing time string: ${timeString}`, e);
+        return 0;
     }
 }
 
-/**
- * Convert timestamp string to seconds
- */
-function timeToSeconds(timeString: string): number {
-    const [hours, minutes, secondsMillis] = timeString.split(':');
-    const [seconds, milliseconds] = secondsMillis.split(',');
-    
-    return (
-        parseInt(hours) * 3600 +
-        parseInt(minutes) * 60 +
-        parseInt(seconds) +
-        parseInt(milliseconds) / 1000
-    );
+function getActiveModal(): ActiveModal {
+     return (window as any).currentActiveModal || ActiveModal.NONE;
 }

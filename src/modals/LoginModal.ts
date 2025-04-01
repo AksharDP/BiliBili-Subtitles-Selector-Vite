@@ -4,9 +4,14 @@ import { validateToken } from '../api/openSubtitles.ts';
 import { storeToken } from '../db/indexedDB';
 import { openUiBtn } from '../main.ts';
 import { showSearchModal } from './SearchModal.ts';
-import {ActiveModal, setActiveModal} from "./ModalManager.ts"; // Import the HTML
+import { ActiveModal, setActiveModal } from "./ModalManager.ts";
 
-export let loginModal: HTMLDivElement;
+export let loginOverlay: HTMLDivElement | null = null;
+export let loginModal: HTMLDivElement | null = null;
+let loginForm: HTMLFormElement | null = null;
+let tokenInput: HTMLInputElement | null = null;
+let cancelBtn: HTMLButtonElement | null = null;
+let statusElement: HTMLElement | null = null;
 
 export function createLoginButton(): HTMLButtonElement {
     const button = createButton("opensubtitles-login-btn", "OpenSubtitles Login", undefined, `
@@ -20,43 +25,40 @@ export function createLoginButton(): HTMLButtonElement {
     return button;
 }
 
-export function createLoginModal(): HTMLDivElement {
-    const loginOverlay = createDiv(
+export function createLoginModal(): void {
+    if (document.getElementById("opensubtitles-login-overlay")) return;
+
+    const overlayDiv = createDiv(
         "opensubtitles-login-overlay",
         "",
         `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 10000;
-            display: none;
-            justify-content: center;
-            align-items: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); z-index: 10000;
+            display: none; justify-content: center; align-items: center;
         `
     );
 
-    const loginModalDiv = createDiv(
+    const modalDiv = createDiv(
         "opensubtitles-login-modal",
         "",
         `
-            background-color: white;
-            padding: 20px;
-            border-radius: 6px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            width: 300px;
+            background-color: white; padding: 20px; border-radius: 6px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); width: 300px;
             max-width: 90%;
         `
     );
 
-    loginModalDiv.innerHTML = loginModalTemplate;
-    loginOverlay.appendChild(loginModalDiv);
-    document.body.appendChild(loginOverlay);
+    modalDiv.innerHTML = loginModalTemplate;
+    overlayDiv.appendChild(modalDiv);
+    document.body.appendChild(overlayDiv);
 
-    const loginForm = document.getElementById("opensubtitles-login-form");
-    const cancelBtn = document.getElementById("os-cancel-btn");
+    loginOverlay = overlayDiv;
+    loginModal = modalDiv;
+    loginForm = loginModal.querySelector("#opensubtitles-login-form") as HTMLFormElement;
+    tokenInput = loginModal.querySelector("#os-token") as HTMLInputElement;
+    cancelBtn = loginModal.querySelector("#os-cancel-btn") as HTMLButtonElement;
+    statusElement = loginModal.querySelector("#os-login-status") as HTMLElement;
+
 
     if (loginForm) {
         loginForm.addEventListener("submit", handleLoginSubmit);
@@ -69,67 +71,79 @@ export function createLoginModal(): HTMLDivElement {
     } else {
         console.error("Cancel button not found");
     }
-
-    return loginOverlay;
 }
 
 export function showLoginModal(): void {
-    const overlay = document.getElementById("opensubtitles-login-overlay");
-    if (overlay) {
-        overlay.style.display = "flex";
+    if (loginOverlay) {
+        loginOverlay.style.display = "flex";
+    }
+    if (statusElement) {
+        statusElement.textContent = "";
+        statusElement.style.display = "none";
     }
     setActiveModal(ActiveModal.LOGIN);
 }
 
 export function hideLoginModal(): void {
-    const overlay = document.getElementById("opensubtitles-login-overlay");
-    if (overlay) {
-        overlay.style.display = "none";
+    if (loginOverlay) {
+        loginOverlay.style.display = "none";
     }
+    if (tokenInput) {
+        tokenInput.value = "";
+    }
+    setActiveModal(ActiveModal.LOGIN);
 }
 
-export function updateButtonToSubtitles(openUiBtn: HTMLButtonElement): void {
-    openUiBtn.textContent = "Subtitles";
-    openUiBtn.style.backgroundColor = "#2ecc71";
+export function updateButtonToSubtitles(btn: HTMLButtonElement): void {
+    btn.textContent = "Subtitles";
+    btn.style.backgroundColor = "#2ecc71";
     setActiveModal(ActiveModal.SEARCH);
 }
 
 export async function handleLoginSubmit(e: Event): Promise<void> {
     e.preventDefault();
-    const token = (document.getElementById("os-token") as HTMLInputElement).value;
-    const status = document.getElementById("os-login-status");
-    
-    if (!token) {
-        if (status) {
-            status.textContent = "Please enter your API token.";
-            status.style.display = "block";
+
+    const tokenValue = tokenInput?.value;
+    const statusEl = statusElement;
+
+    if (!tokenValue) {
+        if (statusEl) {
+            statusEl.textContent = "Please enter your API token.";
+            statusEl.style.display = "block";
+            statusEl.style.color = "#e74c3c";
         }
         return;
     }
-    
+
+    if (statusEl) {
+        statusEl.textContent = "Validating token...";
+        statusEl.style.color = "#3498db";
+        statusEl.style.display = "block";
+    }
+
     try {
-        const result = await validateToken(token);
-        
+        const result = await validateToken(tokenValue);
+
         if (result.valid) {
-            // Store token and user data
-            await storeToken({ 
+            await storeToken({
                 token: result.token,
                 base_url: result.base_url,
                 timestamp: Date.now(),
                 userData: result.userData
             });
-            
+
             updateButtonToSubtitles(openUiBtn);
             hideLoginModal();
             showSearchModal();
         } else {
-            throw new Error("Invalid token");
+             throw new Error("Invalid token provided.");
         }
     } catch (error) {
         console.error("Login error:", error);
-        if (status) {
-            status.textContent = "Login failed. Please check your token.";
-            status.style.display = "block";
+        if (statusEl) {
+            statusEl.textContent = error instanceof Error ? error.message : "Login failed. Please check your token and network connection.";
+            statusEl.style.color = "#e74c3c";
+            statusEl.style.display = "block";
         }
     }
 }

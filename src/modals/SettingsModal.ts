@@ -10,6 +10,8 @@ import {getUserInfo} from '../api/openSubtitles';
 import {ActiveModal, setActiveModal} from './ModalManager'
 import {showSearchModal} from './SearchModal'
 import settingsModalTemplate from '../templates/settingsModal.html?raw';
+import { stopSubtitleDisplay, setupSubtitleDisplay } from '../utils/subtitleDisplay';
+import { hexToRgb } from '../utils/subtitleRenderer';
 
 export let settingsOverlay: HTMLDivElement | null = null;
 export let settingsModal: HTMLDivElement | null = null;
@@ -601,15 +603,42 @@ function saveSettingsDebounced(): void {
 }
 
 async function saveAllSettingsInternal(): Promise<void> {
+    // Get settings from the UI
     const settings = getSettingsFromUI();
 
+    // Update global variables with the new settings
     currentFontColor = settings.fontColor;
     currentOutlineColor = settings.outlineColor;
     currentBgColor = settings.bgColor;
     (window as any).subtitleSyncOffset = settings.syncOffset;
 
     try {
+        // Save settings to IndexedDB
         await saveSettingsToIndexedDB(settings);
+
+        // Update CSS variables at document root level
+        document.documentElement.style.setProperty('--subtitle-font-color', settings.fontColor);
+        document.documentElement.style.setProperty('--subtitle-outline-color', settings.outlineColor);
+        document.documentElement.style.setProperty('--subtitle-bg-color', settings.bgColor);
+        const rgbValues = hexToRgb(settings.bgColor);
+        const opacity = settings.bgEnabled ? settings.bgOpacity : 0;
+        const bgColorRGBA = `rgba(${rgbValues[0]}, ${rgbValues[1]}, ${rgbValues[2]}, ${opacity})`;
+        document.documentElement.style.setProperty('--subtitle-bg-color-rgba', bgColorRGBA);
+        document.documentElement.style.setProperty('--subtitle-outline-width',
+            settings.outlineEnabled ? '2px' : '0');
+        document.documentElement.style.setProperty('--subtitle-font-size', `${settings.fontSize}px`);
+
+        // ADD THIS: Re-apply subtitles with new settings if active
+        if (window.activeCues) {
+            const videoPlayer = document.querySelector('video');
+            const subtitleTextElement = document.querySelector("[id^='bilibili-subtitles-text-']");
+            if (videoPlayer && subtitleTextElement) {
+                // Stop any existing subtitle display first
+                stopSubtitleDisplay();
+                // Re-setup with current cues but new settings (including sync offset)
+                setupSubtitleDisplay(window.activeCues, videoPlayer, subtitleTextElement);
+            }
+        }
     } catch (error) {
         console.error('Error saving settings:', error);
     }
@@ -678,7 +707,7 @@ export async function showSettingsModal() {
 
 export function hideSettingsModal(): void {
     if (settingsOverlay) settingsOverlay.style.display = "none";
-    setActiveModal(ActiveModal.NONE);
+    setActiveModal(ActiveModal.SETTINGS);
 }
 
 export async function backSettingsModal() {

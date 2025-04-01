@@ -236,3 +236,18 @@ export async function checkSubtitleInCache(subtitleId: string): Promise<Subtitle
         return null;
     }
 }
+
+export async function getAnimationEnabled(): Promise<boolean> {
+    const settings = await loadSettingsFromIndexedDB();
+    return settings.animationEnabled !== undefined ? settings.animationEnabled : false;
+}
+
+export async function getAnimationType(): Promise<string> {
+    const settings = await loadSettingsFromIndexedDB();
+    return settings.animationType || "none";
+}
+
+export async function getAnimationDuration(): Promise<number> {
+    const settings = await loadSettingsFromIndexedDB();
+    return settings.animationDuration || 0.3;
+}
