@@ -17,6 +17,9 @@ export default defineConfig({
         noframes: true,
         "run-at": 'document-end'
       },
+      build: {
+        fileName: 'bilibili-subtitles.user.js',
+      }
     }),
     html(),
   ],
