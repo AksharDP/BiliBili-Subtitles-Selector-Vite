@@ -14,6 +14,14 @@ export enum ActiveModal {
     SETTINGS = 'settings'
 }
 
+const overlayMap = {
+    [ActiveModal.LOGIN]: loginOverlay,
+    [ActiveModal.SEARCH]: searchOverlay,
+    [ActiveModal.RESULTS]: resultsOverlay,
+    [ActiveModal.SETTINGS]: settingsOverlay,
+    [ActiveModal.SUBTITLE_VIEWER]: subtitleViewerOverlay
+};
+
 let lastActiveModal: ActiveModal = ActiveModal.LOGIN;
 let isModalOpen: boolean = false;
 let lastViewedSubtitleId: string | null = null;
@@ -59,16 +67,17 @@ function handleDocumentClick(event: MouseEvent): void {
     }
 }
 
+function hideOtherModals(exceptModal: ActiveModal): void {
+    Object.entries(overlayMap).forEach(([modal, overlayElement]) => {
+        if (modal !== exceptModal.toString()) {
+            const element = typeof overlayElement === 'string' ? document.getElementById(overlayElement) : overlayElement;
+            if (element) element.style.display = 'none';
+        }
+    });
+}
+
 export function hideAllModals(): void {
-    const overlays = [
-        loginOverlay,
-        searchOverlay,
-        resultsOverlay,
-        settingsOverlay,
-        subtitleViewerOverlay
-    ];
-    
-    overlays.forEach(overlay => {
+    Object.values(overlayMap).forEach(overlay => {
         if (overlay) overlay.style.display = 'none';
     });
     
@@ -117,23 +126,6 @@ export function setActiveModal(modal: ActiveModal, data?: any): void {
     }
     
     hideOtherModals(modal);
-}
-
-function hideOtherModals(exceptModal: ActiveModal): void {
-    const modalMap = {
-        [ActiveModal.LOGIN]: 'opensubtitles-login-overlay',
-        [ActiveModal.SEARCH]: 'opensubtitles-search-overlay',
-        [ActiveModal.RESULTS]: 'opensubtitles-results-overlay',
-        [ActiveModal.SETTINGS]: settingsOverlay,
-        [ActiveModal.SUBTITLE_VIEWER]: 'subtitle-viewer-overlay'
-    };
-    
-    Object.entries(modalMap).forEach(([modal, overlayElement]) => {
-        if (modal !== exceptModal.toString()) {
-            const element = typeof overlayElement === 'string' ? document.getElementById(overlayElement) : overlayElement;
-            if (element) element.style.display = 'none';
-        }
-    });
 }
 
 export function restoreLastActiveModal(): void {
