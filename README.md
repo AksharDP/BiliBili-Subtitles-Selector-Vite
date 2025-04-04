@@ -14,13 +14,12 @@ A browser userscript that lets you search, select, and apply custom subtitles to
 
 ## Installation
 
-After building, a userscript file (`main.user.js`) will be generated. This can be installed in browser extensions like:
-
+Requires:
 - Tampermonkey
-- Violentmonkey
-- Greasemonkey
 
-**Note:** The `main.user.js` file direct link is still WIP.
+1.  Install the userscript by clicking below:
+
+&emsp;&emsp; [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-Install%20Userscript-brightgreen?logo=tampermonkey&style=flat-square)](https://github.com/AksharDP/BiliBili-Subtitles-Selector-Vite/releases/download/release/bilibili-subtitles.user.js)
 
 ## Build Instructions
 
@@ -28,9 +27,6 @@ This project uses Vite and TypeScript. To build:
 
 ```bash
 pnpm install
-
-pnpm run dev
-
 pnpm run build
 ```
 
