@@ -148,10 +148,10 @@ export function restoreLastActiveModal(): void {
             showSearchModal();
             break;
         case ActiveModal.SUBTITLE_VIEWER:
+            showResultsModal(lastSearchPage, false);
             if (lastViewedSubtitleId) {
                 showSubtitleViewer(lastViewedSubtitleId);
             }
-            showResultsModal(lastSearchPage);
             break;
         case ActiveModal.RESULTS:
             showResultsModal(lastSearchPage);

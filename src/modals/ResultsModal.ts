@@ -67,7 +67,7 @@ export function createResultsModal(): void {
     backToSearchBtn?.addEventListener("click", backToSearch);
 }
 
-export function showResultsModal(page?: number): void {
+export function showResultsModal(page?: number, setActive?: boolean | true): void {
     if (!resultsOverlay || !resultsModal) {
         console.error("Results modal elements not found or not created.");
         return;
@@ -101,7 +101,8 @@ export function showResultsModal(page?: number): void {
     }
 
     updatePaginationControls();
-    setActiveModal(ActiveModal.RESULTS, { page: currentPage });
+    if (setActive) setActiveModal(ActiveModal.RESULTS, { page: currentPage });
+    // setActiveModal(ActiveModal.RESULTS, { page: currentPage });
 }
 
 
