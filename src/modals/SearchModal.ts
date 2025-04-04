@@ -297,12 +297,12 @@ export async function handleSearchSubmit(e: Event): Promise<void> {
             const data = await searchSubtitles(tokenData, params);
 
             if (!data || !data.data || data.data.length === 0) {
-                 updateSearchStatus(`No results found.`, false);
-                 setSearchParams(formData.query || 'Search', params.toString());
-                 updatePaginationState({ total_pages: 0, total_count: 0 }, 1);
-                 updateResults([]);
-                 showResultsModal();
-                 return;
+                updateSearchStatus(`No results found.`, false);
+                setSearchParams(formData.query || 'Search', params.toString());
+                updatePaginationState({ total_pages: 0, total_count: 0 }, 1);
+                updateResults([]);
+                showResultsModal();
+                return;
             }
 
             setSearchParams(formData.query || 'Search Results', params.toString());
