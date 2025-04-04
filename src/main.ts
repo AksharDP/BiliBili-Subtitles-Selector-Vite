@@ -8,11 +8,6 @@ import { checkToken } from './api/openSubtitles';
 import { initModalManager, hideAllModals, restoreLastActiveModal } from './modals/ModalManager';
 
 export let openUiBtn: HTMLButtonElement;
-// export let loginOverlay: HTMLDivElement | null;
-// export let searchOverlay: HTMLDivElement | null;
-// export let resultsOverlay: HTMLDivElement | null;
-// // export let settingsOverlay: HTMLDivElement | null;
-// export let subtitleViewerOverlay: HTMLDivElement | null;
 
 async function handleButtonClick(): Promise<void> {
     const token = await getToken();
@@ -24,11 +19,9 @@ async function handleButtonClick(): Promise<void> {
     }
 }
 
-// Handle document clicks to close modals when clicking outside
 function handleDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     
-    // Get all modal overlays
     const modalOverlays = [
         loginOverlay,
         searchOverlay,
@@ -37,21 +30,14 @@ function handleDocumentClick(event: MouseEvent): void {
         subtitleViewerOverlay
     ].filter(Boolean);
     
-    // // Check if any overlay is visible
-    // const isAnyModalOpen = modalOverlays.some(overlay => 
-    //     overlay && window.getComputedStyle(overlay).display !== 'none');
-    
     if (!modalOverlays.some(overlay => 
         overlay && window.getComputedStyle(overlay).display !== 'none')) return;
     
-    // Check if click is inside a modal or on the button
     const isClickInsideModal = modalOverlays.some(overlay => 
         overlay && overlay.contains(target));
     const isClickOnButton = target.closest('#opensubtitles-login-btn, #opensubtitles-settings-btn');
     
-    // If click is outside modals and not on control button, hide all modals
     if (!isClickInsideModal && !isClickOnButton) {
-        // Use the hideAllModals function from ModalManager
         hideAllModals();
     }
 }
@@ -83,6 +69,7 @@ async function init(): Promise<void> {
     `);
     openUiBtn = createLoginButton();
     openUiBtn.addEventListener("click", handleButtonClick);
+
     createLoginModal();
     createSearchModal();
     createResultsModal();
@@ -94,6 +81,7 @@ async function init(): Promise<void> {
         updateButtonToSubtitles(openUiBtn);
     }
 
+    // Close all modals if the user clicked on the document
     document.addEventListener('click', handleDocumentClick);
 }
 
