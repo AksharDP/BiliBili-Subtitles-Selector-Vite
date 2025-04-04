@@ -102,14 +102,6 @@ export function showResultsModal(page?: number): void {
 
     updatePaginationControls();
     setActiveModal(ActiveModal.RESULTS, { page: currentPage });
-
-    // if (subtitlesId) {
-    //     const itemElement = resultsContainer?.querySelector(`.os-result-item .subtitle-cache-status[data-subtitle-id="${subtitlesId}"]`);
-    //     if (itemElement) {
-    //         const resultItem = itemElement.closest('.os-result-item') as HTMLElement;
-    //         showSubtitleViewer(resultItem);
-    //     }
-    // }
 }
 
 

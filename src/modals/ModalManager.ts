@@ -146,20 +146,18 @@ export function restoreLastActiveModal(): void {
         return;
     }
     
-    const showBoth = lastActiveModal === ActiveModal.SUBTITLE_VIEWER && lastViewedSubtitleId !== null;
-    console.log("Showing both subtitlev viewer and results: ", showBoth);
-    if (showBoth) {
-        showResultsModal(lastSearchPage);
-        showSubtitleViewer(lastViewedSubtitleId);
-        return;
-    }
-    
     switch (lastActiveModal) {
         case ActiveModal.LOGIN:
             showLoginModal();
             break;
         case ActiveModal.SEARCH:
             showSearchModal();
+            break;
+        case ActiveModal.SUBTITLE_VIEWER:
+            if (lastViewedSubtitleId) {
+                showSubtitleViewer(lastViewedSubtitleId);
+            }
+            showResultsModal(lastSearchPage);
             break;
         case ActiveModal.RESULTS:
             showResultsModal(lastSearchPage);
