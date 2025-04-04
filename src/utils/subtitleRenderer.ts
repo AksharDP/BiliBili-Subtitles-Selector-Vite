@@ -16,6 +16,7 @@ declare global {
             endIndex: number;
             text: string;
         }[];
+        subtitleResizeObserver: ResizeObserver | null; // Add this
     }
 }
 
@@ -44,8 +45,8 @@ export function createSubtitleOverlay(settings: any): HTMLDivElement {
         "",
         `
         position: absolute;
-        bottom: 50px;
-        left: 50%;
+        bottom: 10%; /* percentage-based positioning */
+        left: 50%; /* center horizontally */
         transform: translateX(-50%);
         ${
             settings.bgEnabled
@@ -119,6 +120,42 @@ export function hexToRgb(hex: string): number[] {
     return [r, g, b];
 }
 
+function handleResize() {
+    const subtitleElement = document.querySelector('#bilibili-subtitles-draggable');
+    if (!subtitleElement) return;
+    
+    const xPercent = subtitleElement.getAttribute('data-x-percent');
+    const yPercent = subtitleElement.getAttribute('data-y-percent');
+    
+    if (xPercent && yPercent) {
+        (subtitleElement as HTMLElement).style.left = `${xPercent}%`;
+        (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
+        (subtitleElement as HTMLElement).style.bottom = 'auto';
+        (subtitleElement as HTMLElement).style.transform = 'none';
+    } else {
+        (subtitleElement as HTMLElement).style.left = '50%';
+        (subtitleElement as HTMLElement).style.bottom = '10%';
+        (subtitleElement as HTMLElement).style.top = 'auto';
+        (subtitleElement as HTMLElement).style.transform = 'translateX(-50%)';
+    }
+}
+
+export function setupSubtitleResizeHandler(): void {
+    
+    const resizeObserver = new ResizeObserver(() => {
+        handleResize();
+    });
+    
+    const videoContainer = getVideoContainer();
+    if (videoContainer) {
+        resizeObserver.observe(videoContainer);
+    }
+    
+    window.addEventListener('resize', handleResize);
+    
+    window.subtitleResizeObserver = resizeObserver;
+}
+
 export function setupSubtitleDrag(subtitleElement: Element): void {
     let isDragging = false;
     let initialMouseX: number, initialMouseY: number;
@@ -169,63 +206,49 @@ export function setupSubtitleDrag(subtitleElement: Element): void {
 
     document.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
-
+    
         const currentMouseX = e.clientX;
         const currentMouseY = e.clientY;
-
+    
         const deltaX = currentMouseX - initialMouseX;
         const deltaY = currentMouseY - initialMouseY;
-
+    
         let newX = initialElementX + deltaX;
         let newY = initialElementY + deltaY;
-
+    
         const videoPlayer = getVideoPlayer();
         if (videoPlayer) {
             const videoRect = videoPlayer.getBoundingClientRect();
-
             const subtitleTextElement = getSubtitleTextElement(subtitleElement);
-
+    
             const centerX = videoRect.width / 2 - elementWidth / 2;
             const snapThreshold = 20;
-
+    
             const distanceFromCenter = Math.abs(newX - centerX);
-
+    
             if (distanceFromCenter < snapThreshold) {
                 newX = centerX;
                 if (subtitleTextElement) {
                     subtitleTextElement.setAttribute("style", subtitleTextElement.getAttribute("style") + "text-align: center;");
                 }
             }
-
-            if (newX < 0) {
-                newX = 0;
-
-                if (subtitleTextElement) {
-                    subtitleTextElement.setAttribute("style", subtitleTextElement.getAttribute("style") +
-                        `max-width: ${videoRect.width * 0.8}px; white-space: normal; text-align: left;`);
-                }
-            }
-            else if (newX + elementWidth > videoRect.width) {
-                newX = videoRect.width - elementWidth;
-
-                if (subtitleTextElement) {
-                    subtitleTextElement.setAttribute("style", subtitleTextElement.getAttribute("style") +
-                        `max-width: ${videoRect.width * 0.8}px; white-space: normal; text-align: right;`);
-                }
-            }
-            else if (subtitleTextElement && distanceFromCenter >= snapThreshold) {
-                subtitleTextElement.setAttribute("style", subtitleTextElement.getAttribute("style") +
-                    "max-width: ; white-space: normal; text-align: center;");
-            }
-
+    
+            if (newX < 0) newX = 0;
+            if (newX + elementWidth > videoRect.width) newX = videoRect.width - elementWidth;
             if (newY < 0) newY = 0;
             if (newY + elementHeight > videoRect.height) newY = videoRect.height - elementHeight;
+            
+            const xPercent = (newX / videoRect.width) * 100;
+            const yPercent = (newY / videoRect.height) * 100;
+            
+            subtitleElement.setAttribute('data-x-percent', xPercent.toString());
+            subtitleElement.setAttribute('data-y-percent', yPercent.toString());
+            
+            (subtitleElement as HTMLElement).style.transform = 'none';
+            (subtitleElement as HTMLElement).style.left = `${xPercent}%`;
+            (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
+            (subtitleElement as HTMLElement).style.bottom = 'auto';
         }
-
-        (subtitleElement as HTMLElement).style.transform = 'none';
-        (subtitleElement as HTMLElement).style.left = newX + 'px';
-        (subtitleElement as HTMLElement).style.top = newY + 'px';
-        (subtitleElement as HTMLElement).style.bottom = 'auto';
     });
 
     document.addEventListener("mouseup", () => {
@@ -265,6 +288,13 @@ export function clearExistingSubtitles(videoPlayer: HTMLVideoElement): void {
         cancelAnimationFrame(window.subtitleUpdateAnimationFrame);
         window.subtitleUpdateAnimationFrame = null;
     }
+    
+    if (window.subtitleResizeObserver) {
+        window.subtitleResizeObserver.disconnect();
+        window.subtitleResizeObserver = null;
+    }
+
+    window.removeEventListener('resize', handleResize);
 
     if (videoPlayer) {
         Array.from(videoPlayer.querySelectorAll("track")).forEach(track => track.remove());
@@ -297,6 +327,8 @@ export async function applySubtitleToVideo(subtitleContent: string): Promise<boo
 
         videoContainer.appendChild(overlayContainer);
         setupSubtitleDrag(subtitleElement);
+        
+        setupSubtitleResizeHandler();
 
         window.subtitleSyncOffset = settings.syncOffset || 0;
         
