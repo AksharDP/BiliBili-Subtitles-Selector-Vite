@@ -147,19 +147,10 @@ export function restoreLastActiveModal(): void {
     }
     
     const showBoth = lastActiveModal === ActiveModal.SUBTITLE_VIEWER && lastViewedSubtitleId !== null;
+    console.log("Showing both subtitlev viewer and results: ", showBoth);
     if (showBoth) {
         showResultsModal(lastSearchPage);
-        
-        const resultBtn = document.querySelector(`.os-result-item[data-subtitle-id="${lastViewedSubtitleId}"]`) as HTMLElement | null;
-        if (resultBtn) {
-            const resultItem = resultBtn.closest('.os-result-item');
-            if (resultItem) {
-                setTimeout(() => {
-                    showSubtitleViewer(resultItem as HTMLElement);
-                }, 50);
-                return;
-            }
-        }
+        showSubtitleViewer(lastViewedSubtitleId);
         return;
     }
     

@@ -102,6 +102,14 @@ export function showResultsModal(page?: number): void {
 
     updatePaginationControls();
     setActiveModal(ActiveModal.RESULTS, { page: currentPage });
+
+    // if (subtitlesId) {
+    //     const itemElement = resultsContainer?.querySelector(`.os-result-item .subtitle-cache-status[data-subtitle-id="${subtitlesId}"]`);
+    //     if (itemElement) {
+    //         const resultItem = itemElement.closest('.os-result-item') as HTMLElement;
+    //         showSubtitleViewer(resultItem);
+    //     }
+    // }
 }
 
 
@@ -294,14 +302,14 @@ function attachResultButtonListeners(container: HTMLElement): void {
 
         if (subtitleId) {
             if (viewBtn) {
-                 e.preventDefault(); e.stopPropagation();
-                 showSubtitleViewer(resultItem);
+                e.preventDefault(); e.stopPropagation();
+                showSubtitleViewer(viewBtn.getAttribute('data-subtitle-id') || '');
             } else if (downloadBtn) {
-                 e.preventDefault(); e.stopPropagation();
-                 handleSubtitleDownload(resultItem);
+                e.preventDefault(); e.stopPropagation();
+                handleSubtitleDownload(resultItem);
             } else if (saveBtn) {
-                 e.preventDefault(); e.stopPropagation();
-                 handleSubtitleSaveToFile(resultItem);
+                e.preventDefault(); e.stopPropagation();
+                handleSubtitleSaveToFile(resultItem);
             }
         }
     });

@@ -17,6 +17,7 @@ interface TimestampInfo {
 
 export let subtitleViewerOverlay: HTMLDivElement | null = null;
 export let subtitleViewerModal: HTMLDivElement | null = null;
+// export let subtitlesId: string | null;
 let closeBtn: HTMLButtonElement | null = null;
 let copyBtn: HTMLButtonElement | null = null;
 let syncBtn: HTMLButtonElement | null = null;
@@ -84,9 +85,7 @@ export function createSubtitleViewer(): void {
 }
 
 
-export function showSubtitleViewer(resultElement: HTMLElement): void {
-    const osViewBtn = resultElement.querySelector('.os-view-btn') as HTMLElement;
-    const subtitleId = osViewBtn?.dataset.subtitleId || '';
+export function showSubtitleViewer(subtitleId: string | null): void {
     if (!subtitleId) {
         console.error("Invalid subtitle ID:", subtitleId);
         return;
