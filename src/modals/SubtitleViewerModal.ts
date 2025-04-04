@@ -211,17 +211,18 @@ export function hideSubtitleViewer(): void {
         vOverlay.style.display = "none";
         vOverlay.style.width = "0";
 
-        resOverlay.style.pointerEvents = "auto";
-        resModal.style.pointerEvents = "auto";
+        // resOverlay.style.pointerEvents = "auto";
+        // resModal.style.pointerEvents = "auto";
 
-        resModal.style.position = "";
+        resModal.style.position = "fixed";
         resModal.style.left = "";
         resModal.style.top = "";
         resModal.style.transform = "";
         resModal.style.margin = "";
-        resModal.style.width = "";
+        resModal.style.width = "500px";
         resModal.style.zIndex = "";
         resModal.style.transition = "";
+        resModal.style.display = "flex";
 
         if (subtitleContentArea) subtitleContentArea.value = "";
         if (syncStatusElement) syncStatusElement.textContent = "";
@@ -292,16 +293,49 @@ function processSubtitleTimestamps(content: string): TimestampInfo[] {
 
 
 function handleTimestampClick(): void {
-    const textarea = subtitleContentArea;
-    if (!textarea || !window.subtitleTimestamps?.length) return;
+    if (!subtitleContentArea || !window.subtitleTimestamps?.length) return;
 
-    const clickPosition = getTextareaClickPosition(textarea);
-    const timestamp = window.subtitleTimestamps.find(t =>
+    const clickPosition = getTextareaClickPosition(subtitleContentArea);
+    
+    let timestamp = window.subtitleTimestamps.find(t =>
         clickPosition >= t.startIndex && clickPosition <= t.endIndex);
+    
+    if (!timestamp) {
+        const sortedTimestamps = [...window.subtitleTimestamps].sort((a, b) => {
+            const distA = Math.min(
+                Math.abs(clickPosition - a.startIndex),
+                Math.abs(clickPosition - a.endIndex)
+            );
+            const distB = Math.min(
+                Math.abs(clickPosition - b.startIndex),
+                Math.abs(clickPosition - b.endIndex)
+            );
+            return distA - distB;
+        });
+        
+        if (sortedTimestamps.length > 0) {
+            const closestTimestamp = sortedTimestamps[0];
+            const distance = Math.min(
+                Math.abs(clickPosition - closestTimestamp.startIndex),
+                Math.abs(clickPosition - closestTimestamp.endIndex)
+            );
+            
+            if (distance < 50) {
+                timestamp = closestTimestamp;
+            }
+        }
+    }
+    
     if (!timestamp) return;
 
     const videoPlayer = document.querySelector('video');
-    if (!videoPlayer) return;
+    if (!videoPlayer || videoPlayer.getAttribute("src")?.indexOf("error") != -1) {
+        if (syncStatusElement) {
+            syncStatusElement.textContent = `Video Player not found or not loaded.`;
+            syncStatusElement.style.color = '#ff595e';
+        }
+        return
+    };
 
     const offset = videoPlayer.currentTime - timestamp.startTime;
     window.subtitleSyncOffset = offset;
@@ -312,7 +346,7 @@ function handleTimestampClick(): void {
 
         if (syncStatusElement) {
             syncStatusElement.textContent = `Synced! Offset: ${offset.toFixed(2)}s`;
-             syncStatusElement.style.color = '#2ecc71';
+            syncStatusElement.style.color = '#2ecc71';
         }
 
         const textElement = document.querySelector("[id^='bilibili-subtitles-text-']");
@@ -326,13 +360,13 @@ function handleTimestampClick(): void {
 function getTextareaClickPosition(textarea: HTMLTextAreaElement): number {
     if (typeof textarea.selectionStart === 'number') {
         try {
-             return textarea.selectionStart;
+            return textarea.selectionStart;
         } catch(err) {
-             console.warn("Error estimating textarea click position, using selectionStart", err);
-             return textarea.selectionStart ?? 0;
+            console.warn("Error estimating textarea click position, using selectionStart", err);
+            return textarea.selectionStart ?? 0;
         }
     }
-     console.warn("Cannot determine textarea click position accurately.");
+    console.warn("Cannot determine textarea click position accurately.");
     return 0;
 }
 
