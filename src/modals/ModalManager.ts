@@ -14,14 +14,6 @@ export enum ActiveModal {
     SETTINGS = 'settings'
 }
 
-const overlayMap = {
-    [ActiveModal.LOGIN]: loginOverlay,
-    [ActiveModal.SEARCH]: searchOverlay,
-    [ActiveModal.RESULTS]: resultsOverlay,
-    [ActiveModal.SETTINGS]: settingsOverlay,
-    [ActiveModal.SUBTITLE_VIEWER]: subtitleViewerOverlay
-};
-
 let lastActiveModal: ActiveModal = ActiveModal.LOGIN;
 let isModalOpen: boolean = false;
 let lastViewedSubtitleId: string | null = null;
@@ -67,8 +59,18 @@ function handleDocumentClick(event: MouseEvent): void {
     }
 }
 
+function getOverlayMap() {
+    return {
+        [ActiveModal.LOGIN]: loginOverlay,
+        [ActiveModal.SEARCH]: searchOverlay,
+        [ActiveModal.RESULTS]: resultsOverlay,
+        [ActiveModal.SETTINGS]: settingsOverlay,
+        [ActiveModal.SUBTITLE_VIEWER]: subtitleViewerOverlay
+    };
+}
+
 function hideOtherModals(exceptModal: ActiveModal): void {
-    Object.entries(overlayMap).forEach(([modal, overlayElement]) => {
+    Object.entries(getOverlayMap()).forEach(([modal, overlayElement]) => {
         if (modal !== exceptModal.toString()) {
             const element = typeof overlayElement === 'string' ? document.getElementById(overlayElement) : overlayElement;
             if (element) element.style.display = 'none';
@@ -77,7 +79,7 @@ function hideOtherModals(exceptModal: ActiveModal): void {
 }
 
 export function hideAllModals(): void {
-    Object.values(overlayMap).forEach(overlay => {
+    Object.values(getOverlayMap()).forEach(overlay => {
         if (overlay) overlay.style.display = 'none';
     });
     
