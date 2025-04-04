@@ -19,7 +19,7 @@ Requires:
 
 1.  Install the userscript by clicking below:
 
-&emsp;&emsp; [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-Install%20Userscript-brightgreen?logo=tampermonkey&style=flat-square)](https://github.com/AksharDP/BiliBili-Subtitles-Selector-Vite/releases/download/release/bilibili-subtitles.user.js)
+&emsp;&emsp; [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-Install%20Userscript-brightgreen?logo=tampermonkey&style=flat-square)](https://github.com/AksharDP/BiliBili-Subtitles-Selector-Vite/releases/download/v0.2/bilibili-subtitles.user.js)
 
 ## Build Instructions
 
