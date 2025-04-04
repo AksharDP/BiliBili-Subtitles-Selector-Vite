@@ -84,19 +84,15 @@ export async function setupSubtitleDisplay(
         const activeCueId = activeCue ? `${activeCue.startTime}-${activeCue.endTime}` : null;
         
         if (activeCueId !== lastCueId) {
-            // Update state
             lastCueId = activeCueId;
-            // currentCue = activeCue;
             
-            // Apply animation only if enabled
             if (activeCue) {
                 subtitleTextElement.innerHTML = activeCue.text;
                 
-                // Only apply animation class if animations are enabled
                 if (animationEnabled) {
                     subtitleTextElement.className = `subtitle-animation-${animationType}`;
                 } else {
-                    subtitleTextElement.className = ''; // No animation class
+                    subtitleTextElement.className = '';
                 }
             } else {
                 subtitleTextElement.innerHTML = '';
