@@ -603,20 +603,16 @@ function saveSettingsDebounced(): void {
 }
 
 async function saveAllSettingsInternal(): Promise<void> {
-    // Get settings from the UI
     const settings = getSettingsFromUI();
 
-    // Update global variables with the new settings
     currentFontColor = settings.fontColor;
     currentOutlineColor = settings.outlineColor;
     currentBgColor = settings.bgColor;
     (window as any).subtitleSyncOffset = settings.syncOffset;
 
     try {
-        // Save settings to IndexedDB
         await saveSettingsToIndexedDB(settings);
 
-        // Update CSS variables at document root level
         document.documentElement.style.setProperty('--subtitle-font-color', settings.fontColor);
         document.documentElement.style.setProperty('--subtitle-outline-color', settings.outlineColor);
         document.documentElement.style.setProperty('--subtitle-bg-color', settings.bgColor);
@@ -628,14 +624,11 @@ async function saveAllSettingsInternal(): Promise<void> {
             settings.outlineEnabled ? '2px' : '0');
         document.documentElement.style.setProperty('--subtitle-font-size', `${settings.fontSize}px`);
 
-        // ADD THIS: Re-apply subtitles with new settings if active
         if (window.activeCues) {
             const videoPlayer = document.querySelector('video');
             const subtitleTextElement = document.querySelector("[id^='bilibili-subtitles-text-']");
             if (videoPlayer && subtitleTextElement) {
-                // Stop any existing subtitle display first
                 stopSubtitleDisplay();
-                // Re-setup with current cues but new settings (including sync offset)
                 setupSubtitleDisplay(window.activeCues, videoPlayer, subtitleTextElement);
             }
         }

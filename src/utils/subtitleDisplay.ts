@@ -55,7 +55,6 @@ export async function setupSubtitleDisplay(
     
     const animationEnabled = await getAnimationEnabled();
     const animationType = await getAnimationType() || 'fade';
-    // let currentCue: any = null;
     let isPlaying = !videoPlayer.paused;
     
     const onPlay = () => {

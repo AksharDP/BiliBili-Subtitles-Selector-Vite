@@ -17,7 +17,6 @@ interface TimestampInfo {
 
 export let subtitleViewerOverlay: HTMLDivElement | null = null;
 export let subtitleViewerModal: HTMLDivElement | null = null;
-// export let subtitlesId: string | null;
 let closeBtn: HTMLButtonElement | null = null;
 let copyBtn: HTMLButtonElement | null = null;
 let syncBtn: HTMLButtonElement | null = null;
@@ -30,7 +29,6 @@ let cacheIndicatorElement: HTMLElement | null = null;
 declare global {
     interface Window {
         subtitleTimestamps: TimestampInfo[];
-        // subtitleSyncOffset: number | undefined;
         activeCues: any[] | undefined;
         currentActiveModal: ActiveModal | undefined;
     }
@@ -210,9 +208,6 @@ export function hideSubtitleViewer(): void {
     setTimeout(() => {
         vOverlay.style.display = "none";
         vOverlay.style.width = "0";
-
-        // resOverlay.style.pointerEvents = "auto";
-        // resModal.style.pointerEvents = "auto";
 
         resModal.style.position = "fixed";
         resModal.style.left = "";

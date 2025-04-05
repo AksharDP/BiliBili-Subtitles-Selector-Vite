@@ -57,14 +57,11 @@ export async function storeSubtitle(subtitleData: any): Promise<void> {
         const transaction = db.transaction([SUBTITLES_STORE_NAME], "readwrite");
         const store = transaction.objectStore(SUBTITLES_STORE_NAME);
         
-        // Check cache size
         const count = await countSubtitlesInCache(store);
         if (count >= SUBTITLE_CACHE_SIZE) {
-            // Evict oldest subtitles
             await evictOldestSubtitles(store, count - (SUBTITLE_CACHE_SIZE - 1));
         }
         
-        // Store the new subtitle
         store.put(subtitleData);
         
         return new Promise((resolve) => {
@@ -85,10 +82,8 @@ async function countSubtitlesInCache(store: IDBObjectStore): Promise<number> {
 }
 
 async function evictOldestSubtitles(store: IDBObjectStore, deleteCount: number): Promise<void> {
-    // Get all subtitles sorted by timestamp
     const allSubtitles = await getAllSubtitlesSortedByTimestamp(store);
     
-    // Delete the oldest ones
     for (let i = 0; i < deleteCount && i < allSubtitles.length; i++) {
         await deleteSubtitleFromCache(store, allSubtitles[i].id);
     }

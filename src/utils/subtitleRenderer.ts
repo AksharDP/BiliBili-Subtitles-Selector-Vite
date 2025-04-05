@@ -16,7 +16,7 @@ declare global {
             endIndex: number;
             text: string;
         }[];
-        subtitleResizeObserver: ResizeObserver | null; // Add this
+        subtitleResizeObserver: ResizeObserver | null;
     }
 }
 
