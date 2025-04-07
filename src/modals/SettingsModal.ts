@@ -270,7 +270,7 @@ async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
         btn.textContent = "Refreshing...";
         btn.disabled = true;
         btn.style.backgroundColor = GREY;
-        btn.style.color = GREY;
+        btn.style.color = BLACK;
     }
 
     try {
@@ -286,17 +286,15 @@ async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
 
             if (btn && showRefreshedIndicator) {
                 btn.textContent = "Updated!";
-                btn.style.backgroundColor = GREY;
-                btn.style.color = GREEN;
-                btn.style.borderColor = GREEN;
+                btn.style.backgroundColor = GREEN;
+                btn.style.color = WHITE;
                 btn.disabled = false;
             }
         } else {
             if (btn) {
                 btn.textContent = "Failed to Update";
                 btn.style.backgroundColor = RED;
-                btn.style.color = RED;
-                btn.style.borderColor = RED;
+                btn.style.color = WHITE;
                 btn.disabled = false;
             }
         }
@@ -306,17 +304,15 @@ async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
         if (btn) {
             btn.textContent = "Error";
             btn.style.backgroundColor = RED;
-            btn.style.color = RED;
-            btn.style.borderColor = RED;
+            btn.style.color = WHITE;
             btn.disabled = false;
         }
     } finally {
         setTimeout(() => {
             if (btn) {
                 btn.textContent = "Refresh Information";
-                btn.style.backgroundColor = GREY;
-                btn.style.color = GREY;
-                btn.style.borderColor = GREY;
+                btn.style.backgroundColor = BLUE;
+                btn.style.color = WHITE;
                 btn.disabled = false;
             }
         }, 2000);
@@ -343,11 +339,6 @@ function updateUserInfoUI(userData: any) {
                 <div><strong>Status:</strong></div>
                 <div>
                     ${userData.data.level || "Unknown"}
-                    ${
-            userData.data.vip
-                ? `<span id="os-user-vip-badge" style="background-color: ${ORANGE}; color: ${BLACK}; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">VIP</span>`
-                : ""
-        }
                 </div>
 
                 <div><strong>Downloads:</strong></div>
