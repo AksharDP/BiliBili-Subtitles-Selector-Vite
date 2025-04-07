@@ -62,10 +62,9 @@ export function createSubtitleOverlay(settings: any): HTMLDivElement {
         display: inline-block;
         pointer-events: auto;
         cursor: move;
-        user-select: text;
+        user-select: none;
         `
     );
-    // font-family: Arial, sans-serif;
     const subtitleText = createDiv(
         `bilibili-subtitles-text`,
         "",
