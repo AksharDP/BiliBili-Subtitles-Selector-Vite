@@ -169,24 +169,26 @@ function populateLanguagesDropdown(
         lang.name.toLowerCase().includes(searchText) && !selectedCodes.includes(lang.code)
     );
 
-    filteredLanguages.forEach(lang => {
-        const item = document.createElement("div");
-        item.style.cssText = `padding: 8px 12px; cursor: pointer; font-size: 14px;`;
-        item.textContent = lang.name;
-    
-        item.addEventListener("click", (e) => {
-            e.stopPropagation();
-            addLanguageTag(lang.code, lang.name, selectedContainer, input);
-            dropdown.style.display = "none";
-            if (languagesSearchInput) languagesSearchInput.value = "";
-            populateLanguagesDropdown(languages);
+    filteredLanguages
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(lang => {
+            const item = document.createElement("div");
+            item.style.cssText = `padding: 8px 12px; cursor: pointer; font-size: 14px;`;
+            item.textContent = lang.name;
+        
+            item.addEventListener("click", (e) => {
+                e.stopPropagation();
+                addLanguageTag(lang.code, lang.name, selectedContainer, input);
+                dropdown.style.display = "none";
+                if (languagesSearchInput) languagesSearchInput.value = "";
+                populateLanguagesDropdown(languages);
+            });
+        
+            item.addEventListener("mouseenter", () => { item.style.backgroundColor = WHITE; });
+            item.addEventListener("mouseleave", () => { item.style.backgroundColor = "transparent"; });
+        
+            dropdown.appendChild(item);
         });
-    
-        item.addEventListener("mouseenter", () => { item.style.backgroundColor = WHITE; });
-        item.addEventListener("mouseleave", () => { item.style.backgroundColor = "transparent"; });
-    
-        dropdown.appendChild(item);
-    });
 
     if (filteredLanguages.length === 0) {
         const noResults = document.createElement("div");
