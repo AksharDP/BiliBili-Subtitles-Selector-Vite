@@ -15,7 +15,7 @@ export const SUBTITLE_CACHE_SIZE = 20;
 
 export const RED = "#ff595e";
 export const ORANGE = "#ffc107";
-export const GREEN = "#8ac926";
+export const GREEN = "#2ecc71";
 export const BLUE = "#1982c4";
 export const GREY = "#778da9";
 export const WHITE = "#fff";
