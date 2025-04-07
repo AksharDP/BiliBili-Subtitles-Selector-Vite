@@ -16,7 +16,9 @@ import {
     RED,
     BLUE,
     GREEN,
-    GREY, ORANGE, WHITE, BLACK
+    GREY,
+    WHITE,
+    BLACK
 } from '../utils/constants';
 
 export let settingsOverlay: HTMLDivElement | null = null;
