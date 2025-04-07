@@ -147,7 +147,23 @@ function populateLanguagesDropdown(
     console.log("[Subtitles Selector] Populating languages dropdown");
     dropdown.innerHTML = "";
 
+    dropdown.style.maxHeight = "200px";
+    dropdown.style.overflowY = "auto";
+    dropdown.style.position = "absolute";
+    dropdown.style.width = "100%";
+    dropdown.style.zIndex = "1001";
+    dropdown.style.backgroundColor = "white";
+    dropdown.style.border = "1px solid #ddd";
+    dropdown.style.borderRadius = "4px";
+    dropdown.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+
     const selectedCodes = input.value.split(',').filter(code => code.trim() !== '');
+
+    selectedContainer.style.display = "flex";
+    selectedContainer.style.flexWrap = "wrap";
+    selectedContainer.style.gap = "5px";
+    selectedContainer.style.marginTop = "5px";
+    selectedContainer.style.marginBottom = "10px";
 
     const filteredLanguages = languages.filter(lang =>
         lang.name.toLowerCase().includes(searchText) && !selectedCodes.includes(lang.code)
@@ -198,12 +214,8 @@ function addLanguageTag(
         <span style="margin-left: 6px; cursor: pointer; font-weight: bold;" class="remove-lang">×</span>
     `;
 
-    tag.innerHTML = `
-        <span>${name}</span>
-        <span style="margin-left: 6px; cursor: pointer; font-weight: bold;" class="remove-lang">×</span>
-    `;
-
-    tag.querySelector('.remove-lang')?.addEventListener("click", () => {
+    tag.querySelector('.remove-lang')?.addEventListener("click", (e) => {
+        e.stopPropagation();
         removeLanguageTag(code, container, input);
     });
 
