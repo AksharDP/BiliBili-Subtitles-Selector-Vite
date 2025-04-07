@@ -126,17 +126,26 @@ function handleResize() {
     
     const xPercent = subtitleElement.getAttribute('data-x-percent');
     const yPercent = subtitleElement.getAttribute('data-y-percent');
+    const isCentered = subtitleElement.getAttribute('data-centered') === 'true';
     
     if (xPercent && yPercent) {
-        (subtitleElement as HTMLElement).style.left = `${xPercent}%`;
-        (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
-        (subtitleElement as HTMLElement).style.bottom = 'auto';
-        (subtitleElement as HTMLElement).style.transform = 'none';
+        if (isCentered) {
+            (subtitleElement as HTMLElement).style.left = '50%';
+            (subtitleElement as HTMLElement).style.transform = 'translateX(-50%)';
+            (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
+            (subtitleElement as HTMLElement).style.bottom = 'auto';
+        } else {
+            (subtitleElement as HTMLElement).style.transform = 'none';
+            (subtitleElement as HTMLElement).style.left = `${xPercent}%`;
+            (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
+            (subtitleElement as HTMLElement).style.bottom = 'auto';
+        }
     } else {
         (subtitleElement as HTMLElement).style.left = '50%';
+        (subtitleElement as HTMLElement).style.transform = 'translateX(-50%)';
         (subtitleElement as HTMLElement).style.bottom = '10%';
         (subtitleElement as HTMLElement).style.top = 'auto';
-        (subtitleElement as HTMLElement).style.transform = 'translateX(-50%)';
+        subtitleElement.setAttribute('data-centered', 'true');
     }
 }
 
@@ -161,8 +170,10 @@ export function setupSubtitleDrag(subtitleElement: Element): void {
     let initialMouseX: number, initialMouseY: number;
     let initialElementX: number, initialElementY: number;
     let elementWidth: number, elementHeight: number;
+    let isCentered = true;
     
     subtitleElement.setAttribute("style", subtitleElement.getAttribute("style") + "transition: none;");
+    subtitleElement.setAttribute("data-centered", "true");
     
     subtitleElement.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -228,9 +239,15 @@ export function setupSubtitleDrag(subtitleElement: Element): void {
     
             if (distanceFromCenter < snapThreshold) {
                 newX = centerX;
+                isCentered = true;
+                subtitleElement.setAttribute("data-centered", "true");
+                
                 if (subtitleTextElement) {
                     subtitleTextElement.setAttribute("style", subtitleTextElement.getAttribute("style") + "text-align: center;");
                 }
+            } else {
+                isCentered = false;
+                subtitleElement.setAttribute("data-centered", "false");
             }
     
             if (newX < 0) newX = 0;
@@ -244,10 +261,17 @@ export function setupSubtitleDrag(subtitleElement: Element): void {
             subtitleElement.setAttribute('data-x-percent', xPercent.toString());
             subtitleElement.setAttribute('data-y-percent', yPercent.toString());
             
-            (subtitleElement as HTMLElement).style.transform = 'none';
-            (subtitleElement as HTMLElement).style.left = `${xPercent}%`;
-            (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
-            (subtitleElement as HTMLElement).style.bottom = 'auto';
+            if (isCentered) {
+                (subtitleElement as HTMLElement).style.left = '50%';
+                (subtitleElement as HTMLElement).style.transform = 'translateX(-50%)';
+                (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
+                (subtitleElement as HTMLElement).style.bottom = 'auto';
+            } else {
+                (subtitleElement as HTMLElement).style.transform = 'none';
+                (subtitleElement as HTMLElement).style.left = `${xPercent}%`;
+                (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
+                (subtitleElement as HTMLElement).style.bottom = 'auto';
+            }
         }
     });
 
