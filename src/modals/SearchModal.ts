@@ -7,7 +7,8 @@ import { getToken } from '../db/indexedDB';
 import { setActiveModal, ActiveModal } from './ModalManager.ts';
 import {
     BLUE, WHITE,
-    GREY
+    GREY,
+    BLACK
 } from '../utils/constants';
 
 export let searchOverlay: HTMLDivElement | null = null;
@@ -154,19 +155,20 @@ function populateLanguagesDropdown(
 
     filteredLanguages.forEach(lang => {
         const item = document.createElement("div");
-        item.style.cssText = `padding: 8px 12px; cursor: pointer; border-bottom: 1px solid ${WHITE}; font-size: 14px;`;
+        item.style.cssText = `padding: 8px 12px; cursor: pointer; font-size: 14px;`;
         item.textContent = lang.name;
-
-        item.addEventListener("click", () => {
+    
+        item.addEventListener("click", (e) => {
+            e.stopPropagation();
             addLanguageTag(lang.code, lang.name, selectedContainer, input);
             dropdown.style.display = "none";
             if (languagesSearchInput) languagesSearchInput.value = "";
             populateLanguagesDropdown(languages);
         });
-
+    
         item.addEventListener("mouseenter", () => { item.style.backgroundColor = WHITE; });
         item.addEventListener("mouseleave", () => { item.style.backgroundColor = "transparent"; });
-
+    
         dropdown.appendChild(item);
     });
 
@@ -188,7 +190,7 @@ function addLanguageTag(
     if (currentCodes.includes(code)) return;
 
     const tag = document.createElement("div");
-    tag.style.cssText = `background-color: ${BLUE}; color: ${BLUE}; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; margin: 2px;`;
+    tag.style.cssText = `background-color: ${BLUE}; color: ${BLACK}; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; margin: 2px;`;
     tag.dataset.code = code;
 
     tag.innerHTML = `
