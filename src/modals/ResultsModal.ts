@@ -10,7 +10,6 @@ import {
     RED,
     GREEN,
     GREY,
-    BLACK,
     WHITE,
     BLUE
 } from '../utils/constants';
