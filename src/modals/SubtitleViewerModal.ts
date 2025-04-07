@@ -1,11 +1,17 @@
-import {createDiv} from '../ui/components';
+import { createDiv } from '../ui/components';
 import subtitleViewerTemplate from '../templates/SubtitleViewer.html?raw';
-import {checkSubtitleInCache, getToken, loadSettingsFromIndexedDB, saveSettingsToIndexedDB} from '../db/indexedDB';
-import {fetchSubtitleData} from '../api/openSubtitles';
-import {setupSubtitleDisplay} from '../utils/subtitleDisplay';
-import {ActiveModal, setActiveModal} from './ModalManager';
+import { checkSubtitleInCache, getToken, loadSettingsFromIndexedDB, saveSettingsToIndexedDB } from '../db/indexedDB';
+import { fetchSubtitleData } from '../api/openSubtitles';
+import { setupSubtitleDisplay } from '../utils/subtitleDisplay';
+import { ActiveModal, setActiveModal } from './ModalManager';
 import { updateCacheStatusDisplay as updateResultsCacheStatus, resultsModal, resultsOverlay } from './ResultsModal';
-
+import {
+    RED,
+    GREEN,
+    BLACK,
+    WHITE,
+    YELLOW
+} from '../utils/constants';
 
 interface TimestampInfo {
     startTime: number;
@@ -41,14 +47,14 @@ export function createSubtitleViewer(): void {
     const overlayDiv = createDiv(
         "subtitle-viewer-overlay", "",
         `position: fixed; top: 0; left: 0; width: 0; height: 100%; background-color: transparent;
-         z-index: 9999; display: none; justify-content: center; align-items: center; pointer-events: none;`
+        z-index: 9999; display: none; justify-content: center; align-items: center; pointer-events: none;`
     );
 
     const modalDiv = createDiv(
         "subtitle-viewer-content", "",
-        `background-color: white; padding: 0; border-radius: 6px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-         width: 500px; max-width: 90%; height: 80vh; display: flex; flex-direction: column; overflow: hidden;
-         opacity: 0; position: absolute; pointer-events: auto; transition: transform 0.3s ease, opacity 0.3s ease;`
+        `background-color: ${WHITE}; padding: 0; border-radius: 6px; box-shadow: 0 4px 10px rgba(${BLACK}, 0.3);
+        width: 500px; max-width: 90%; height: 80vh; display: flex; flex-direction: column; overflow: hidden;
+        opacity: 0; position: absolute; pointer-events: auto; transition: transform 0.3s ease, opacity 0.3s ease;`
     );
 
     modalDiv.innerHTML = subtitleViewerTemplate;
@@ -77,7 +83,7 @@ export function createSubtitleViewer(): void {
         style.id = "subtitle-viewer-styles";
         style.textContent = `
             @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            .timestamp-highlight { background-color: #ffff99; cursor: pointer; }`;
+            .timestamp-highlight { background-color: ${YELLOW}; cursor: pointer; }`;
         document.head.appendChild(style);
     }
 }
@@ -115,6 +121,8 @@ export function showSubtitleViewer(subtitleId: string | null): void {
     contentArea.style.whiteSpace = "pre-wrap";
     contentArea.style.overflowWrap = "break-word";
     contentArea.style.overflowX = "hidden";
+    contentArea.style.fontFamily = "'Nunito', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif";
+    contentArea.style.fontSize = "16px";
 
     setActiveModal(ActiveModal.SUBTITLE_VIEWER, { subtitleId, resultsVisible: true });
 
@@ -181,9 +189,9 @@ export function showSubtitleViewer(subtitleId: string | null): void {
             .catch(error => {
                 console.error("Error loading subtitle:", error);
                 contentArea.value = `Error: ${error.message || "Failed to load subtitle"}`;
-                 if (syncStatusElement) {
+                if (syncStatusElement) {
                     syncStatusElement.textContent = "Error loading subtitle.";
-                 }
+                }
             })
             .finally(() => {
                 loadingEl.style.display = "none";
@@ -223,7 +231,7 @@ export function hideSubtitleViewer(): void {
         if (syncStatusElement) syncStatusElement.textContent = "";
 
         if (getActiveModal() === ActiveModal.SUBTITLE_VIEWER) {
-             setActiveModal(ActiveModal.RESULTS);
+            setActiveModal(ActiveModal.RESULTS);
         }
 
     }, 300);
@@ -265,13 +273,13 @@ function processSubtitleTimestamps(content: string): TimestampInfo[] {
         const textStartIndex = match.index + match[0].length;
         let nextMatchIndex = content.indexOf('\n\n', textStartIndex);
         if (nextMatchIndex === -1) {
-           nextMatchIndex = content.length;
+            nextMatchIndex = content.length;
         }
-         let textEndIndex = nextMatchIndex;
-         const potentialNextNumberMatch = /^\d+\s*$/m.exec(content.substring(textStartIndex, textEndIndex));
-         if (potentialNextNumberMatch) {
-             textEndIndex = textStartIndex + potentialNextNumberMatch.index;
-         }
+        let textEndIndex = nextMatchIndex;
+        const potentialNextNumberMatch = /^\d+\s*$/m.exec(content.substring(textStartIndex, textEndIndex));
+        if (potentialNextNumberMatch) {
+            textEndIndex = textStartIndex + potentialNextNumberMatch.index;
+        }
 
         const subtitleText = content.substring(textStartIndex, textEndIndex).trim();
 
@@ -327,7 +335,7 @@ function handleTimestampClick(): void {
     if (!videoPlayer || videoPlayer.getAttribute("src")?.indexOf("error") != -1) {
         if (syncStatusElement) {
             syncStatusElement.textContent = `Video Player not found or not loaded.`;
-            syncStatusElement.style.color = '#ff595e';
+            syncStatusElement.style.color = RED;
         }
         return
     };
@@ -341,7 +349,7 @@ function handleTimestampClick(): void {
 
         if (syncStatusElement) {
             syncStatusElement.textContent = `Synced! Offset: ${offset.toFixed(2)}s`;
-            syncStatusElement.style.color = '#2ecc71';
+            syncStatusElement.style.color = GREEN;
         }
 
         const textElement = document.querySelector("[id^='bilibili-subtitles-text-']");
@@ -367,22 +375,19 @@ function getTextareaClickPosition(textarea: HTMLTextAreaElement): number {
 
 
 function autoSyncSubtitles(): void {
-    const textarea = subtitleContentArea;
-    const syncStatusEl = syncStatusElement;
-
-    if (!textarea) {
-        if (syncStatusEl) syncStatusEl.textContent = "Subtitle content area not found.";
+    if (!subtitleContentArea) {
+        if (syncStatusElement) syncStatusElement.textContent = "Subtitle content area not found.";
         return;
     }
 
-    const cursorPos = textarea.selectionStart;
+    const cursorPos = subtitleContentArea.selectionStart;
     if (cursorPos === null || isNaN(cursorPos)) {
-        if (syncStatusEl) syncStatusEl.textContent = "Cannot determine cursor position.";
+        if (syncStatusElement) syncStatusElement.textContent = "Cannot determine cursor position.";
         return;
     }
 
     if (!window.subtitleTimestamps?.length) {
-        if (syncStatusEl) syncStatusEl.textContent = "No timestamps processed for syncing.";
+        if (syncStatusElement) syncStatusElement.textContent = "No timestamps processed for syncing.";
         return;
     }
 
@@ -395,15 +400,15 @@ function autoSyncSubtitles(): void {
                 Math.abs(cursorPos - prev.startIndex) <= Math.abs(cursorPos - curr.startIndex) ? prev : curr
             );
     }
-     if (!selectedTimestamp || selectedTimestamp.startTime === undefined) {
-         if (syncStatusEl) syncStatusEl.textContent = "Could not find a valid timestamp near cursor.";
-         return;
-     }
+    if (!selectedTimestamp || selectedTimestamp.startTime === undefined) {
+        if (syncStatusElement) syncStatusElement.textContent = "Could not find a valid timestamp near cursor.";
+        return;
+    }
 
 
     const videoPlayer = document.querySelector('video');
     if (!videoPlayer) {
-        if (syncStatusEl) syncStatusEl.textContent = "Video player not found.";
+        if (syncStatusElement) syncStatusElement.textContent = "Video player not found.";
         return;
     }
 
@@ -415,9 +420,9 @@ function autoSyncSubtitles(): void {
         const newSettings = { ...settings, syncOffset: offset };
         saveSettingsToIndexedDB(newSettings);
 
-        if (syncStatusEl) {
-            syncStatusEl.textContent = `Synced at cursor! Offset: ${offset.toFixed(2)}s`;
-            syncStatusEl.style.color = '#2ecc71';
+        if (syncStatusElement) {
+            syncStatusElement.textContent = `Synced at cursor! Offset: ${offset.toFixed(2)}s`;
+            syncStatusElement.style.color = GREEN;
         }
 
         const textElement = document.querySelector("[id^='bilibili-subtitles-text-']");
@@ -426,40 +431,39 @@ function autoSyncSubtitles(): void {
         }
     }).catch(error => {
         console.error("Failed to save sync offset:", error);
-         if (syncStatusEl) {
-            syncStatusEl.textContent = `Error saving sync offset.`;
-            syncStatusEl.style.color = '#e74c3c';
-         }
+        if (syncStatusElement) {
+            syncStatusElement.textContent = `Error saving sync offset.`;
+            syncStatusElement.style.color = RED;
+        }
     });
 }
 
 
 function copySubtitleToClipboard(): void {
-    const textarea = subtitleContentArea;
-    const statusEl = syncStatusElement;
-
-    if (!textarea || !textarea.value) {
-         if (statusEl) statusEl.textContent = "Nothing to copy.";
-         return;
+    if (!subtitleContentArea || !subtitleContentArea.value) {
+        if (syncStatusElement) syncStatusElement.textContent = "Nothing to copy.";
+        return;
     }
 
-    navigator.clipboard.writeText(textarea.value)
+    navigator.clipboard.writeText(subtitleContentArea.value)
         .then(() => {
-            if (statusEl) {
-                const originalText = statusEl.textContent || "";
-                statusEl.textContent = "Copied to clipboard!";
-                statusEl.style.color = '#2ecc71';
+            if (syncStatusElement) {
+                const originalText = syncStatusElement.textContent || "";
+                syncStatusElement.textContent = "Copied to clipboard!";
+                syncStatusElement.style.color = GREEN;
                 setTimeout(() => {
-                     statusEl.textContent = originalText.startsWith("Synced") || originalText.startsWith("Found") ? originalText : "";
-                     statusEl.style.color = '';
+                    if (syncStatusElement) {
+                        syncStatusElement.textContent = originalText.startsWith("Synced") || originalText.startsWith("Found") ? originalText : "";
+                        syncStatusElement.style.color = '';
+                    }
                 }, 2000);
             }
         })
         .catch(err => {
             console.error('Failed to copy text: ', err);
-            if (statusEl) {
-                 statusEl.textContent = "Failed to copy!";
-                 statusEl.style.color = '#e74c3c';
+            if (syncStatusElement) {
+                syncStatusElement.textContent = "Failed to copy!";
+                syncStatusElement.style.color = RED;
             }
         });
 }
@@ -486,5 +490,5 @@ function timeToSeconds(timeString: string): number {
 }
 
 function getActiveModal(): ActiveModal {
-     return (window as any).currentActiveModal || ActiveModal.NONE;
+    return (window as any).currentActiveModal || ActiveModal.NONE;
 }

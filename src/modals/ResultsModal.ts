@@ -1,11 +1,19 @@
-import {createDiv} from '../ui/components';
+import { createDiv } from '../ui/components';
 import resultsModalTemplate from '../templates/ResultsModal.html?raw';
-import {checkSubtitleInCache, getToken} from '../db/indexedDB';
-import {fetchSubtitleData} from '../api/openSubtitles';
-import {hideSubtitleViewer, showSubtitleViewer} from './SubtitleViewerModal';
-import {applySubtitleToVideo, clearExistingSubtitles} from '../utils/subtitleRenderer';
-import {ActiveModal, setActiveModal} from './ModalManager';
+import { checkSubtitleInCache, getToken } from '../db/indexedDB';
+import { fetchSubtitleData } from '../api/openSubtitles';
+import { hideSubtitleViewer, showSubtitleViewer } from './SubtitleViewerModal';
+import { applySubtitleToVideo, clearExistingSubtitles } from '../utils/subtitleRenderer';
+import { ActiveModal, setActiveModal } from './ModalManager';
 import { showSearchModal } from './SearchModal';
+import {
+    RED,
+    GREEN,
+    GREY,
+    BLACK,
+    WHITE,
+    BLUE
+} from '../utils/constants';
 
 export let resultsOverlay: HTMLDivElement | null = null;
 export let resultsModal: HTMLDivElement | null = null;
@@ -34,7 +42,7 @@ export function createResultsModal(): void {
     `);
 
     const modalDiv = createDiv("opensubtitles-results-modal", "", `
-        background-color: white; padding: 0; border-radius: 6px;
+        background-color: ${WHITE}; padding: 0; border-radius: 6px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); width: 500px; max-width: 90%;
         max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
     `);
@@ -89,7 +97,7 @@ export function showResultsModal(page?: number, setActive?: boolean | true): voi
         displayCurrentPage();
     } else {
         if(resultsContainer) {
-            resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666; font-family: Arial, sans-serif;">No results found or loaded yet.</div>';
+            resultsContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: ${GREY};">No results found or loaded yet.</div>`;
         }
         if (paginationInfo) paginationInfo.textContent = "";
         if (resultsSummaryElement) resultsSummaryElement.innerHTML = "No Search Performed";
@@ -196,7 +204,7 @@ async function displayCurrentPage(): Promise<void> {
     container.innerHTML = "";
 
     if (currentSearchResults.length === 0) {
-        container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666; font-family: Arial, sans-serif;">No results found for your search criteria.</div>';
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No results found for your search criteria.</div>';
         return;
     }
 
@@ -216,7 +224,14 @@ async function createResultItem(result: any, index: number): Promise<HTMLElement
     const item = document.createElement("div");
     item.className = "os-result-item";
     item.dataset.index = index.toString();
-    item.style.cssText = "padding: 15px; background-color: #f9f9f9; border-radius: 4px; margin-bottom: 10px;";
+    item.style.cssText = `
+        padding: 15px;
+        background-color: ${WHITE};
+        margin-bottom: 10px;
+        border-radius: 4px;
+        border: 1px solid rgba(0,0,0,0.15);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    `;
 
     const attributes = result.attributes || {};
     const file = attributes.files && attributes.files.length > 0 ? attributes.files[0] : {};
@@ -229,20 +244,20 @@ async function createResultItem(result: any, index: number): Promise<HTMLElement
     const releaseInfo = attributes.release || attributes.filename || "No release info";
 
     const isCached = await checkSubtitleInCache(fileId);
-    const cacheIndicatorColor = isCached ? '#2ecc71' : '#95a5a6';
+    const cacheIndicatorColor = isCached ? GREEN : GREY;
     const cacheText = isCached ? 'Cached' : 'Not cached';
 
     item.innerHTML = `
         <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <h3 title="${title} ${year ? `(${year})` : ''}" style="margin: 0; font-family: Arial, sans-serif; font-size: 16px; color: #00a1d6; overflow: hidden; text-overflow: ellipsis; max-width: 350px; white-space: nowrap;">
+            <h3 title="${title} ${year ? `(${year})` : ''}" style="margin: 0; font-size: 16px; color: ${BLUE}; overflow: hidden; text-overflow: ellipsis; max-width: 350px; white-space: nowrap;">
                 ${title} ${year ? `(${year})` : ''}
             </h3>
-            <span style="font-family: Arial, sans-serif; font-size: 14px; color: #666; margin-left: 8px; flex-shrink: 0;">${language}</span>
+            <span style=" font-size: 14px; color: ${GREY}; margin-left: 8px; flex-shrink: 0;">${language}</span>
         </div>
-        <div title="${releaseInfo}" style="font-family: Arial, sans-serif; font-size: 14px; color: #666; margin-bottom: 8px; word-break: break-word; overflow-wrap: break-word; max-height: 40px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+        <div title="${releaseInfo}" style=" font-size: 14px; color: ${GREY}; margin-bottom: 8px; word-break: break-word; overflow-wrap: break-word; max-height: 40px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
             ${releaseInfo}
         </div>
-        <div style="display: flex; justify-content: flex-start; font-family: Arial, sans-serif; font-size: 14px; color: #666; margin-bottom: 10px; align-items: center;">
+        <div style="display: flex; justify-content: flex-start; font-size: 14px; color: ${GREY}; margin-bottom: 10px; align-items: center;">
             <div class="subtitle-cache-status" data-subtitle-id="${fileId}" style="display: inline-flex; align-items: center; margin-right: 8px;">
                 <span class="cache-indicator" style="width: 8px; height: 8px; border-radius: 50%; background-color: ${cacheIndicatorColor}; margin-right: 4px;"></span>
                 <span class="cache-text" style="font-size: 12px; color: ${cacheIndicatorColor};">${cacheText}</span>
@@ -250,9 +265,9 @@ async function createResultItem(result: any, index: number): Promise<HTMLElement
             <span>Downloads: ${downloads.toLocaleString()}</span>
         </div>
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button class="os-view-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">View</button>
-            <button class="os-download-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: #00a1d6; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">Apply</button>
-            <button class="os-save-file-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;">Save File</button>
+            <button class="os-view-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: ${WHITE}; color: ${GREY}; border: none; border-radius: 4px; cursor: pointer;">View</button>
+            <button class="os-download-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: ${BLUE}; color: ${WHITE}; border: none; border-radius: 4px; cursor: pointer;">Apply</button>
+            <button class="os-save-file-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: ${WHITE}; color: ${GREY}; border: none; border-radius: 4px; cursor: pointer;">Save File</button>
         </div>
     `;
 
@@ -266,7 +281,7 @@ async function checkCacheStatus(subtitleId: string, itemElement: HTMLElement): P
         if (statusContainer) {
             const indicator = statusContainer.querySelector('.cache-indicator') as HTMLElement;
             const text = statusContainer.querySelector('.cache-text') as HTMLElement;
-            const newColor = isCached ? '#2ecc71' : '#95a5a6';
+            const newColor = isCached ? GREEN : GREY;
             const newText = isCached ? 'Cached' : 'Not cached';
             if (indicator) indicator.style.backgroundColor = newColor;
             if (text) {
@@ -390,7 +405,7 @@ function setDownloadButtonLoading(button: Element): void {
 function setDownloadButtonSuccess(button: Element): void {
     if (button instanceof HTMLButtonElement) {
         button.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin: auto;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke=${GREEN} stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin: auto;">
                 <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
         `;
@@ -403,7 +418,7 @@ function setDownloadButtonError(button: Element): void {
         const originalBg = button.style.backgroundColor;
         button.disabled = false;
         button.textContent = "Error";
-        button.style.backgroundColor = "#e74c3c";
+        button.style.backgroundColor = RED;
         setTimeout(() => {
             resetDownloadButton(button);
             button.style.backgroundColor = originalBg;

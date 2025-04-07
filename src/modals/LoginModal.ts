@@ -5,6 +5,7 @@ import { storeToken } from '../db/indexedDB';
 import { openUiBtn } from '../main.ts';
 import { showSearchModal } from './SearchModal.ts';
 import { ActiveModal, setActiveModal } from "./ModalManager.ts";
+import { RED, BLUE } from '../utils/constants.ts';
 
 export let loginOverlay: HTMLDivElement | null = null;
 export let loginModal: HTMLDivElement | null = null;
@@ -16,9 +17,8 @@ let statusElement: HTMLElement | null = null;
 export function createLoginButton(): HTMLButtonElement {
     const button = createButton("opensubtitles-login-btn", "OpenSubtitles Login", undefined, `
         position: fixed; bottom: 20px; right: 20px; z-index: 9999;
-        padding: 10px 15px; background-color: #00a1d6; color: white;
+        padding: 10px 15px; background-color: ${BLUE}; color: white;
         border: none; border-radius: 4px; cursor: pointer;
-        font-family: 'Nunito', 'Inter', sans-serif; font-size: 14px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     `);
     document.body.appendChild(button);
@@ -96,7 +96,7 @@ export function hideLoginModal(): void {
 
 export function updateButtonToSubtitles(btn: HTMLButtonElement): void {
     btn.textContent = "Subtitles";
-    btn.style.backgroundColor = "#2ecc71";
+    btn.style.backgroundColor = BLUE;
     setActiveModal(ActiveModal.SEARCH);
 }
 
@@ -110,14 +110,14 @@ export async function handleLoginSubmit(e: Event): Promise<void> {
         if (statusEl) {
             statusEl.textContent = "Please enter your API token.";
             statusEl.style.display = "block";
-            statusEl.style.color = "#e74c3c";
+            statusEl.style.color = RED;
         }
         return;
     }
 
     if (statusEl) {
         statusEl.textContent = "Validating token...";
-        statusEl.style.color = "#3498db";
+        statusEl.style.color = BLUE;
         statusEl.style.display = "block";
     }
 
@@ -136,13 +136,13 @@ export async function handleLoginSubmit(e: Event): Promise<void> {
             hideLoginModal();
             showSearchModal();
         } else {
-             throw new Error("Invalid token provided.");
+            throw new Error("Invalid token provided.");
         }
     } catch (error) {
         console.error("Login error:", error);
         if (statusEl) {
             statusEl.textContent = error instanceof Error ? error.message : "Login failed. Please check your token and network connection.";
-            statusEl.style.color = "#e74c3c";
+            statusEl.style.color = RED;
             statusEl.style.display = "block";
         }
     }

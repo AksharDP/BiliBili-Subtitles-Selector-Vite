@@ -6,7 +6,7 @@ export function createButton(id: string, text: string, onClick?: () => void, sty
     button.style.cssText = `
         padding: 8px 15px; background-color: #f0f0f0; color: #333;
         border: none; border-radius: 4px; cursor: pointer;
-        font-family: Arial, sans-serif; ${style}
+        ${style}
     `;
     if (onClick) button.addEventListener("click", onClick);
     return button;

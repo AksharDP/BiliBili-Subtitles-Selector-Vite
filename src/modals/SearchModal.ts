@@ -5,6 +5,10 @@ import searchModalTemplate from '../templates/searchModal.html?raw';
 import { updatePaginationState, updateResults, showResultsModal, setSearchParams } from './ResultsModal';
 import { getToken } from '../db/indexedDB';
 import { setActiveModal, ActiveModal } from './ModalManager.ts';
+import {
+    BLUE, WHITE,
+    GREY
+} from '../utils/constants';
 
 export let searchOverlay: HTMLDivElement | null = null;
 export let searchModal: HTMLDivElement | null = null;
@@ -121,10 +125,10 @@ function setupLanguageSelector(): void {
         });
 
         searchInput.addEventListener("input", async () => {
-             const searchText = searchInput.value.toLowerCase();
-             const langs = await fetchLanguages();
-             populateLanguagesDropdown(langs, searchText);
-             dropdown.style.display = "block";
+            const searchText = searchInput.value.toLowerCase();
+            const langs = await fetchLanguages();
+            populateLanguagesDropdown(langs, searchText);
+            dropdown.style.display = "block";
         });
     }
 }
@@ -150,7 +154,7 @@ function populateLanguagesDropdown(
 
     filteredLanguages.forEach(lang => {
         const item = document.createElement("div");
-        item.style.cssText = "padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px;";
+        item.style.cssText = `padding: 8px 12px; cursor: pointer; border-bottom: 1px solid ${WHITE}; font-size: 14px;`;
         item.textContent = lang.name;
 
         item.addEventListener("click", () => {
@@ -160,7 +164,7 @@ function populateLanguagesDropdown(
             populateLanguagesDropdown(languages);
         });
 
-        item.addEventListener("mouseenter", () => { item.style.backgroundColor = "#f5f5f5"; });
+        item.addEventListener("mouseenter", () => { item.style.backgroundColor = WHITE; });
         item.addEventListener("mouseleave", () => { item.style.backgroundColor = "transparent"; });
 
         dropdown.appendChild(item);
@@ -168,7 +172,7 @@ function populateLanguagesDropdown(
 
     if (filteredLanguages.length === 0) {
         const noResults = document.createElement("div");
-        noResults.style.cssText = "padding: 8px 12px; color: #999; font-size: 14px;";
+        noResults.style.cssText = `padding: 8px 12px; color: ${GREY}; font-size: 14px;`;
         noResults.textContent = searchText ? "No matching languages found" : "All languages selected";
         dropdown.appendChild(noResults);
     }
@@ -180,12 +184,17 @@ function addLanguageTag(
     container: HTMLElement,
     input: HTMLInputElement
 ): void {
-     const currentCodes = input.value.split(',').filter(c => c.trim() !== '');
-     if (currentCodes.includes(code)) return;
+    const currentCodes = input.value.split(',').filter(c => c.trim() !== '');
+    if (currentCodes.includes(code)) return;
 
     const tag = document.createElement("div");
-    tag.style.cssText = "background-color: #e0f7fa; color: #00838f; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; margin: 2px;";
+    tag.style.cssText = `background-color: ${BLUE}; color: ${BLUE}; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; margin: 2px;`;
     tag.dataset.code = code;
+
+    tag.innerHTML = `
+        <span>${name}</span>
+        <span style="margin-left: 6px; cursor: pointer; font-weight: bold;" class="remove-lang">×</span>
+    `;
 
     tag.innerHTML = `
         <span>${name}</span>
@@ -248,7 +257,7 @@ export function updateSearchStatus(message: string, isLoading: boolean = false):
         if (isLoading) {
             statusEl.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: center;">
-                    <div style="width: 16px; height: 16px; border: 2px solid #3498db; border-radius: 50%; border-top-color: transparent; margin-right: 10px; animation: os-spin 1s linear infinite;"></div>
+                    <div style="width: 16px; height: 16px; border: 2px solid ${BLUE}; border-radius: 50%; border-top-color: transparent; margin-right: 10px; animation: os-spin 1s linear infinite;"></div>
                     <span>${message}</span>
                 </div>
                 <style>
@@ -259,7 +268,7 @@ export function updateSearchStatus(message: string, isLoading: boolean = false):
                 </style>
             `;
         } else {
-             statusEl.textContent = message;
+            statusEl.textContent = message;
         }
     }
 }
@@ -286,7 +295,7 @@ export async function handleSearchSubmit(e: Event): Promise<void> {
             if (key === 'imdb_id' && processedValue.startsWith('tt')) {
                 processedValue = processedValue.substring(2);
             } else if (key.includes('_id') && /^[0-9]+$/.test(processedValue)) {
-                 processedValue = parseInt(processedValue, 10).toString();
+                processedValue = parseInt(processedValue, 10).toString();
             }
             params.append(key, processedValue);
         }

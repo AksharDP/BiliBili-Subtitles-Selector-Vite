@@ -1,4 +1,4 @@
-import {createDiv} from '../ui/components';
+import { createDiv } from '../ui/components';
 import {
     getTokenDataFromDB,
     getUserInfoFromDB,
@@ -6,12 +6,18 @@ import {
     saveSettingsToIndexedDB,
     saveUserInfoToDB
 } from '../db/indexedDB';
-import {getUserInfo} from '../api/openSubtitles';
-import {ActiveModal, setActiveModal} from './ModalManager'
-import {showSearchModal} from './SearchModal'
+import { getUserInfo } from '../api/openSubtitles';
+import { ActiveModal, setActiveModal } from './ModalManager';
+import { showSearchModal } from './SearchModal';
 import settingsModalTemplate from '../templates/settingsModal.html?raw';
 import { stopSubtitleDisplay, setupSubtitleDisplay } from '../utils/subtitleDisplay';
 import { hexToRgb } from '../utils/subtitleRenderer';
+import {
+    RED,
+    BLUE,
+    GREEN,
+    GREY, ORANGE, WHITE, BLACK
+} from '../utils/constants';
 
 export let settingsOverlay: HTMLDivElement | null = null;
 export let settingsModal: HTMLDivElement | null = null;
@@ -63,9 +69,9 @@ let animationDurationValue: HTMLElement | null = null;
 let saveBtn: HTMLButtonElement | null = null;
 
 
-let currentFontColor = "#FFFFFF";
-let currentOutlineColor = "#000000";
-let currentBgColor = "#000000";
+let currentFontColor = WHITE;
+let currentOutlineColor = BLACK;
+let currentBgColor = BLACK;
 
 
 export function createSettingsModal(): void {
@@ -84,9 +90,9 @@ export function createSettingsModal(): void {
     settingsModalDiv.innerHTML = settingsModalTemplate;
 
     const notificationPopupDiv = createDiv("os-settings-notification", "Settings saved successfully!", `
-        position: fixed; top: 20px; right: 20px; background-color: #2ecc71;
+        position: fixed; top: 20px; right: 20px; background-color: ${GREEN};
         color: white; padding: 12px 20px; border-radius: 4px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); font-family: Arial, sans-serif;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         font-size: 14px; z-index: 10002; opacity: 0; transform: translateY(-20px);
         transition: all 0.3s ease; pointer-events: none;
     `);
@@ -170,7 +176,7 @@ function setupSettingsEventListeners(): void {
         setFontColor(target.value);
         clearFontColorSelection();
         if (hexFontColorInput) hexFontColorInput.value = target.value.replace('#', '');
-        if (customFontColorContainer) customFontColorContainer.style.border = "2px solid #00a1d6";
+        if (customFontColorContainer) customFontColorContainer.style.border = `2px solid ${BLUE}`;
     });
 
     hexFontColorInput?.addEventListener("input", e => handleHexColorInput(e, 'font'));
@@ -263,8 +269,8 @@ async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
     if (btn && showRefreshedIndicator) {
         btn.textContent = "Refreshing...";
         btn.disabled = true;
-        btn.style.backgroundColor = "#f0f0f0";
-        btn.style.color = "#999";
+        btn.style.backgroundColor = GREY;
+        btn.style.color = GREY;
     }
 
     try {
@@ -280,17 +286,17 @@ async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
 
             if (btn && showRefreshedIndicator) {
                 btn.textContent = "Updated!";
-                btn.style.backgroundColor = "#e8f5e9";
-                btn.style.color = "#2e7d32";
-                btn.style.borderColor = "#c8e6c9";
+                btn.style.backgroundColor = GREY;
+                btn.style.color = GREEN;
+                btn.style.borderColor = GREEN;
                 btn.disabled = false;
             }
         } else {
             if (btn) {
                 btn.textContent = "Failed to Update";
-                btn.style.backgroundColor = "#ffebee";
-                btn.style.color = "#c62828";
-                btn.style.borderColor = "#ef9a9a";
+                btn.style.backgroundColor = RED;
+                btn.style.color = RED;
+                btn.style.borderColor = RED;
                 btn.disabled = false;
             }
         }
@@ -299,18 +305,18 @@ async function refreshUserInfo(showRefreshedIndicator: boolean): Promise<void> {
 
         if (btn) {
             btn.textContent = "Error";
-            btn.style.backgroundColor = "#ffebee";
-            btn.style.color = "#c62828";
-            btn.style.borderColor = "#ef9a9a";
+            btn.style.backgroundColor = RED;
+            btn.style.color = RED;
+            btn.style.borderColor = RED;
             btn.disabled = false;
         }
     } finally {
         setTimeout(() => {
             if (btn) {
                 btn.textContent = "Refresh Information";
-                btn.style.backgroundColor = "#f0f0f0";
-                btn.style.color = "#666";
-                btn.style.borderColor = "#ddd";
+                btn.style.backgroundColor = GREY;
+                btn.style.color = GREY;
+                btn.style.borderColor = GREY;
                 btn.disabled = false;
             }
         }, 2000);
@@ -322,7 +328,7 @@ function updateUserInfoUI(userData: any) {
     if (!userData || !userData.data) {
         if (container) {
             container.innerHTML = `
-                <div style="color: #e74c3c; font-size: 14px; text-align: center;">
+                <div style="color: ${RED}; font-size: 14px; text-align: center;">
                     No user information found.<br>
                     Please try refreshing.
                 </div>
@@ -333,13 +339,13 @@ function updateUserInfoUI(userData: any) {
 
     if (container) {
         container.innerHTML = `
-            <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-family: Arial, sans-serif; font-size: 14px;">
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-size: 14px;">
                 <div><strong>Status:</strong></div>
                 <div>
                     ${userData.data.level || "Unknown"}
                     ${
             userData.data.vip
-                ? '<span id="os-user-vip-badge" style="background-color: #ffc107; color: #000; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">VIP</span>'
+                ? `<span id="os-user-vip-badge" style="background-color: ${ORANGE}; color: ${BLACK}; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">VIP</span>`
                 : ""
         }
                 </div>
@@ -370,7 +376,7 @@ function handleBgToggle(e: Event): void {
 
     const toggleSpan = bgToggleSpan;
     if (toggleSpan) {
-        toggleSpan.style.backgroundColor = isChecked ? "#00a1d6" : "#ccc";
+        toggleSpan.style.backgroundColor = isChecked ? BLUE : GREY;
         const toggleDot = toggleSpan.querySelector("span") as HTMLElement;
         if (toggleDot) {
             toggleDot.style.transform = isChecked ? "translateX(26px)" : "";
@@ -385,7 +391,7 @@ function handleBgColorPicker(e: Event): void {
     setBgColor(target.value);
     clearBgColorSelection();
     if (hexBgColorInput) hexBgColorInput.value = target.value.replace('#', '');
-    if (customBgColorContainer) customBgColorContainer.style.border = "2px solid #00a1d6";
+    if (customBgColorContainer) customBgColorContainer.style.border = `2px solid ${BLUE}`;
     saveSettingsDebounced();
 }
 
@@ -396,7 +402,7 @@ function handleOutlineToggle(e: Event): void {
 
     const toggleSpan = outlineToggleSpan;
     if (toggleSpan) {
-        toggleSpan.style.backgroundColor = isChecked ? "#00a1d6" : "#ccc";
+        toggleSpan.style.backgroundColor = isChecked ? BLUE : GREY;
         const toggleDot = toggleSpan.querySelector("span") as HTMLElement;
         if (toggleDot) {
             toggleDot.style.transform = isChecked ? "translateX(26px)" : "";
@@ -413,7 +419,7 @@ function handleAnimationToggle(e: Event): void {
 
     const toggleSpan = animationToggleSpan;
     if (toggleSpan) {
-        toggleSpan.style.backgroundColor = isChecked ? "#00a1d6" : "#ccc";
+        toggleSpan.style.backgroundColor = isChecked ? BLUE : GREY;
         const toggleDot = toggleSpan.querySelector("span") as HTMLElement;
         if (toggleDot) {
             toggleDot.style.transform = isChecked ? "translateX(26px)" : "";
@@ -429,27 +435,28 @@ function handleHexColorInput(e: Event, colorType: 'font' | 'bg' | 'outline'): vo
     if (!color.startsWith('#')) color = '#' + color;
 
     if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)) {
+
         switch (colorType) {
             case 'font':
                 setFontColor(color);
                 clearFontColorSelection();
                 if (customFontColorPicker) customFontColorPicker.value = color;
                 if (hexFontColorInput) hexFontColorInput.value = color.replace('#', '');
-                if (customFontColorContainer) customFontColorContainer.style.border = "2px solid #00a1d6";
+                if (customFontColorContainer) customFontColorContainer.style.border = `2px solid ${BLUE}`;
                 break;
             case 'bg':
                 setBgColor(color);
                 clearBgColorSelection();
                 if (customBgColorPicker) customBgColorPicker.value = color;
                 if (hexBgColorInput) hexBgColorInput.value = color.replace('#', '');
-                if (customBgColorContainer) customBgColorContainer.style.border = "2px solid #00a1d6";
+                if (customBgColorContainer) customBgColorContainer.style.border = `2px solid ${BLUE}`;
                 break;
             case 'outline':
                 setOutlineColor(color);
                 clearOutlineColorSelection();
-                 if (customOutlineColorPicker) customOutlineColorPicker.value = color;
+                if (customOutlineColorPicker) customOutlineColorPicker.value = color;
                 if (hexOutlineColorInput) hexOutlineColorInput.value = color.replace('#', '');
-                if (customOutlineColorContainer) customOutlineColorContainer.style.border = "2px solid #00a1d6";
+                if (customOutlineColorContainer) customOutlineColorContainer.style.border = `2px solid ${BLUE}`;
                 break;
         }
         saveSettingsDebounced();
@@ -461,7 +468,7 @@ function handleOutlineColorPickerInput(e: Event): void {
     setOutlineColor(target.value);
     clearOutlineColorSelection();
     if (hexOutlineColorInput) hexOutlineColorInput.value = target.value.replace('#', '');
-    if (customOutlineColorContainer) customOutlineColorContainer.style.border = "2px solid #00a1d6";
+    if (customOutlineColorContainer) customOutlineColorContainer.style.border = `2px solid ${BLUE}`;
     saveSettingsDebounced();
 }
 
@@ -490,22 +497,22 @@ function highlightSelectedFontColor(selectedColor: string): void {
     colorBtns?.forEach(btn => {
         const btnElement = btn as HTMLElement;
         if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
-            btnElement.style.border = "2px solid #00a1d6";
+            btnElement.style.border = `2px solid ${BLUE}`;
             presetSelected = true;
         }
     });
 
     if (!presetSelected && customFontColorContainer) {
-        customFontColorContainer.style.border = "2px solid #00a1d6";
+        customFontColorContainer.style.border = `2px solid ${BLUE}`;
     }
 }
 
 function clearFontColorSelection(): void {
     fontColorBtns?.forEach(btn => {
-        (btn as HTMLElement).style.border = "1px solid #ddd";
+        (btn as HTMLElement).style.border = `2px solid ${GREY}`;
     });
     if (customFontColorContainer) {
-        customFontColorContainer.style.border = "1px solid #ddd";
+        customFontColorContainer.style.border = `2px solid ${GREY}`;
     }
 }
 
@@ -522,22 +529,22 @@ function highlightSelectedBgColor(selectedColor: string): void {
     colorBtns?.forEach(btn => {
         const btnElement = btn as HTMLElement;
         if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
-            btnElement.style.border = "2px solid #00a1d6";
+            btnElement.style.border = `2px solid ${BLUE}`;
             presetSelected = true;
         }
     });
 
     if (!presetSelected && customBgColorContainer) {
-        customBgColorContainer.style.border = "2px solid #00a1d6";
+        customBgColorContainer.style.border = `2px solid ${BLUE}`;
     }
 }
 
 function clearBgColorSelection(): void {
     bgColorBtns?.forEach(btn => {
-        (btn as HTMLElement).style.border = "1px solid #ddd";
+        (btn as HTMLElement).style.border = `2px solid ${GREY}`;
     });
     if (customBgColorContainer) {
-        customBgColorContainer.style.border = "1px solid #ddd";
+        customBgColorContainer.style.border = `2px solid ${GREY}`;
     }
 }
 
@@ -554,22 +561,22 @@ function highlightSelectedOutlineColor(selectedColor: string): void {
     colorBtns?.forEach(btn => {
         const btnElement = btn as HTMLElement;
         if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
-            btnElement.style.border = "2px solid #00a1d6";
+            btnElement.style.border = `2px solid ${BLUE}`;
             presetSelected = true;
         }
     });
 
     if (!presetSelected && customOutlineColorContainer) {
-        customOutlineColorContainer.style.border = "2px solid #00a1d6";
+        customOutlineColorContainer.style.border = `2px solid ${BLUE}`;
     }
 }
 
 function clearOutlineColorSelection(): void {
     outlineColorBtns?.forEach(btn => {
-        (btn as HTMLElement).style.border = "1px solid #ddd";
+        (btn as HTMLElement).style.border = `2px solid ${GREY}`;
     });
     if (customOutlineColorContainer) {
-        customOutlineColorContainer.style.border = "1px solid #ddd";
+        customOutlineColorContainer.style.border = `2px solid ${GREY}`;
     }
 }
 
@@ -709,9 +716,9 @@ export async function backSettingsModal() {
 }
 
 function updateSettingsUI(settings: any): void {
-    currentFontColor = settings?.fontColor || "#FFFFFF";
-    currentOutlineColor = settings?.outlineColor || "#000000";
-    currentBgColor = settings?.bgColor || "#000000";
+    currentFontColor = settings?.fontColor || WHITE;
+    currentOutlineColor = settings?.outlineColor || BLACK;
+    currentBgColor = settings?.bgColor || BLACK;
 
     if (fontSizeValue) {
         fontSizeValue.textContent = `${settings?.fontSize || 16}px`;
@@ -726,7 +733,7 @@ function updateSettingsUI(settings: any): void {
     updateBgOptionsVisibility(bgEnabled);
 
     if (bgToggleSpan) {
-        bgToggleSpan.style.backgroundColor = bgEnabled ? "#00a1d6" : "#ccc";
+        bgToggleSpan.style.backgroundColor = bgEnabled ? BLUE : GREY;
         const toggleDot = bgToggleSpan.querySelector("span") as HTMLElement;
         if (toggleDot) {
             toggleDot.style.transform = bgEnabled ? "translateX(26px)" : "";
@@ -747,7 +754,7 @@ function updateSettingsUI(settings: any): void {
     updateOutlineOptionsVisibility(outlineEnabled);
 
     if (outlineToggleSpan) {
-        outlineToggleSpan.style.backgroundColor = outlineEnabled ? "#00a1d6" : "#ccc";
+        outlineToggleSpan.style.backgroundColor = outlineEnabled ? BLUE : GREY;
         const toggleDot = outlineToggleSpan.querySelector("span") as HTMLElement;
         if (toggleDot) {
             toggleDot.style.transform = outlineEnabled ? "translateX(26px)" : "";
@@ -771,7 +778,7 @@ function updateSettingsUI(settings: any): void {
     updateAnimationOptionsVisibility(animationEnabled);
 
     if (animationToggleSpan) {
-        animationToggleSpan.style.backgroundColor = animationEnabled ? "#00a1d6" : "#ccc";
+        animationToggleSpan.style.backgroundColor = animationEnabled ? BLUE : GREY;
         const toggleDot = animationToggleSpan.querySelector("span") as HTMLElement;
         if (toggleDot) {
             toggleDot.style.transform = animationEnabled ? "translateX(26px)" : "";

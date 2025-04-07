@@ -2,6 +2,7 @@ import {createDiv} from '../ui/components';
 import {parseSubtitleContent} from './subtitleParser';
 import {setupSubtitleDisplay} from './subtitleDisplay';
 import {loadSettingsFromIndexedDB} from '../db/indexedDB';
+import {BLACK} from '../utils/constants';
 
 declare global {
     interface Window {
@@ -50,7 +51,7 @@ export function createSubtitleOverlay(settings: any): HTMLDivElement {
         transform: translateX(-50%);
         ${
             settings.bgEnabled
-                ? `background-color: rgba(${hexToRgb(settings.bgColor || "#000000").join(", ")}, ${settings.bgOpacity}); padding: 5px 10px;`
+                ? `background-color: rgba(${hexToRgb(settings.bgColor || BLACK).join(", ")}, ${settings.bgOpacity}); padding: 5px 10px;`
                 : "padding: 0; background-color: transparent;"
         }
         color: ${settings.fontColor};
@@ -64,12 +65,11 @@ export function createSubtitleOverlay(settings: any): HTMLDivElement {
         user-select: text;
         `
     );
-
+    // font-family: Arial, sans-serif;
     const subtitleText = createDiv(
         `bilibili-subtitles-text`,
         "",
         `
-        font-family: Arial, sans-serif;
         font-size: ${Math.max(1, settings.fontSize)}px;
         line-height: 1.2;
         color: ${settings.fontColor};
