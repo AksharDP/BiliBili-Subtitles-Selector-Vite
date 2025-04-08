@@ -32,4 +32,4 @@ pnpm run build
 
 ## Browser Compatibility
 
-Tested primarily in a Chromium-based browser with Tampermonkey extension.
+Tested primarily in a Chromium-based browser with Tampermonkey extension, but it should work on any browser with the tampermonkey extention.
