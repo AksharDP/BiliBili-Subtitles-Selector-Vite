@@ -16,7 +16,7 @@ let statusElement: HTMLElement | null = null;
 
 export function createLoginButton(): HTMLButtonElement {
     const button = createButton("opensubtitles-login-btn", "OpenSubtitles Login", undefined, `
-        position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+        position: fixed; bottom: 50px; right: 20px; z-index: 9999;
         padding: 10px 15px; background-color: ${BLUE}; color: white;
         border: none; border-radius: 4px; cursor: pointer;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
