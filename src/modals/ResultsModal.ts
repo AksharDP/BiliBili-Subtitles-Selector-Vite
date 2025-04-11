@@ -34,38 +34,27 @@ let currentSearchParams: string | null = null;
 export function createResultsModal(): void {
     if (document.getElementById("opensubtitles-results-overlay")) return;
 
-    const overlayDiv = createDiv("opensubtitles-results-overlay", "", `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background-color: rgba(0, 0, 0, 0.5); z-index: 10000; display: none;
-        justify-content: center; align-items: center;
-    `);
+    // Add the HTML for the modal to the document
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = resultsModalTemplate;
+    document.body.appendChild(tempDiv.firstElementChild as HTMLElement);
 
-    const modalDiv = createDiv("opensubtitles-results-modal", "", `
-        background-color: ${WHITE}; padding: 0; border-radius: 6px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); width: 500px; max-width: 90%;
-        max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
-    `);
+    resultsOverlay = document.getElementById("opensubtitles-results-overlay") as HTMLDivElement;
+    resultsModal = document.getElementById("opensubtitles-results-modal") as HTMLDivElement;
+    resultsContainer = document.getElementById("os-results-container") as HTMLElement;
+    paginationInfo = document.getElementById("os-pagination-info") as HTMLElement;
+    resultsSummaryElement = document.getElementById("os-results-summary") as HTMLElement;
+    prevPageBtn = document.getElementById("os-prev-btn") as HTMLButtonElement;
+    nextPageBtn = document.getElementById("os-next-btn") as HTMLButtonElement;
+    backToSearchBtn = document.getElementById("os-back-search-btn") as HTMLButtonElement;
 
-    modalDiv.innerHTML = resultsModalTemplate;
-    overlayDiv.appendChild(modalDiv);
-    document.body.appendChild(overlayDiv);
-
-    resultsOverlay = overlayDiv;
-    resultsModal = modalDiv;
-    resultsContainer = resultsModal.querySelector("#os-results-container") as HTMLElement;
-    paginationInfo = resultsModal.querySelector("#os-pagination-info") as HTMLElement;
-    resultsSummaryElement = resultsModal.querySelector("#os-results-summary") as HTMLElement;
-    prevPageBtn = resultsModal.querySelector("#os-prev-btn") as HTMLButtonElement;
-    nextPageBtn = resultsModal.querySelector("#os-next-btn") as HTMLButtonElement;
-    backToSearchBtn = resultsModal.querySelector("#os-back-search-btn") as HTMLButtonElement;
-
-    resultsOverlay.addEventListener("click", (e: MouseEvent) => {
+    resultsOverlay?.addEventListener("click", (e: MouseEvent) => {
         if (e.target === resultsOverlay) {
             hideResultsModal();
         }
     });
 
-    resultsModal.addEventListener("click", (e: MouseEvent) => {
+    resultsModal?.addEventListener("click", (e: MouseEvent) => {
         e.stopPropagation();
     });
 
@@ -100,11 +89,6 @@ export function showResultsModal(page?: number, setActive?: boolean | true): voi
         }
         if (paginationInfo) paginationInfo.textContent = "";
         if (resultsSummaryElement) resultsSummaryElement.innerHTML = "No Search Performed";
-    }
-
-    if (resultsContainer) {
-        resultsContainer.style.overflow = "auto";
-        resultsContainer.style.maxHeight = "calc(80vh - 140px)";
     }
 
     updatePaginationControls();
@@ -247,26 +231,28 @@ async function createResultItem(result: any, index: number): Promise<HTMLElement
     const cacheText = isCached ? 'Cached' : 'Not cached';
 
     item.innerHTML = `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <h3 title="${title} ${year ? `(${year})` : ''}" style="margin: 0; font-size: 16px; color: ${BLUE}; overflow: hidden; text-overflow: ellipsis; max-width: 350px; white-space: nowrap;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0px;">
+            <h3 title="${title} ${year ? `(${year})` : ''}" style="margin: 0; font-size: 16px; color: ${BLUE}; text-overflow: ellipsis; max-width: 350px; white-space: nowrap;">
                 ${title} ${year ? `(${year})` : ''}
             </h3>
-            <span style=" font-size: 14px; color: ${GREY}; margin-left: 8px; flex-shrink: 0;">${language}</span>
+            <span style="margin-left: 8px; flex-shrink: 0;">${language}</span>
         </div>
-        <div title="${releaseInfo}" style=" font-size: 14px; color: ${GREY}; margin-bottom: 8px; word-break: break-word; overflow-wrap: break-word; max-height: 40px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+        <div title="${releaseInfo}" style="font-size: 14px; word-break: break-word; overflow-wrap: break-word; max-height: 40px; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
             ${releaseInfo}
         </div>
-        <div style="display: flex; justify-content: flex-start; font-size: 14px; color: ${GREY}; margin-bottom: 10px; align-items: center;">
-            <div class="subtitle-cache-status" data-subtitle-id="${fileId}" style="display: inline-flex; align-items: center; margin-right: 8px;">
+        <p style="font-size: 14px; margin: 0;">
+            Downloads: ${downloads.toLocaleString()}
+        </p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="subtitle-cache-status" data-subtitle-id="${fileId}" style="display: inline-flex; align-items: center;">
                 <span class="cache-indicator" style="width: 8px; height: 8px; border-radius: 50%; background-color: ${cacheIndicatorColor}; margin-right: 4px;"></span>
                 <span class="cache-text" style="font-size: 12px; color: ${cacheIndicatorColor};">${cacheText}</span>
             </div>
-            <span>Downloads: ${downloads.toLocaleString()}</span>
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button class="os-view-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: ${WHITE}; color: ${GREY}; border: none; border-radius: 4px; cursor: pointer;">View</button>
-            <button class="os-download-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: ${BLUE}; color: ${WHITE}; border: none; border-radius: 4px; cursor: pointer;">Apply</button>
-            <button class="os-save-file-btn" data-subtitle-id="${fileId}" style="padding: 6px 12px; background-color: ${WHITE}; color: ${GREY}; border: none; border-radius: 4px; cursor: pointer;">Save File</button>
+            <div style="display: flex; gap: 6px;">
+                <button class="os-view-btn" data-subtitle-id="${fileId}" style="padding: 6px 3px 6px 6px; background-color: ${WHITE}; border: none; border-radius: 4px; cursor: pointer;">View</button>
+                <button class="os-save-file-btn" data-subtitle-id="${fileId}" style="padding: 6px 6px 6px 0px; background-color: ${WHITE}; border: none; border-radius: 4px; cursor: pointer;">Save As File</button>
+                <button class="os-download-btn" data-subtitle-id="${fileId}" style="padding: 6px 6px; background-color: ${BLUE}; color: ${WHITE}; border: none; border-radius: 4px; cursor: pointer;">Apply</button>
+            </div>
         </div>
     `;
 
