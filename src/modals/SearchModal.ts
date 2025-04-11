@@ -208,7 +208,7 @@ function addLanguageTag(
     if (currentCodes.includes(code)) return;
 
     const tag = document.createElement("div");
-    tag.style.cssText = `background-color: ${BLUE}; color: ${BLACK}; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; margin: 2px;`;
+    tag.style.cssText = `background-color: ${BLUE}; color: ${WHITE}; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; margin: 2px;`;
     tag.dataset.code = code;
 
     tag.innerHTML = `
