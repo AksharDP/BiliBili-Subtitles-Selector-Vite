@@ -1,4 +1,3 @@
-import { createDiv } from '../ui/components';
 import resultsModalTemplate from '../templates/ResultsModal.html?raw';
 import { checkSubtitleInCache, getToken } from '../db/indexedDB';
 import { fetchSubtitleData } from '../api/openSubtitles';
