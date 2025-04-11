@@ -12,10 +12,10 @@ A browser userscript that lets you search, select, and apply custom subtitles to
 - Drag and position subtitles anywhere on the video
 - Animation effects for subtitle transitions
 
-## Installation
-
-Requires:
+## Requirements:
 - Tampermonkey
+
+## Installation
 
 1.  Install the userscript by clicking below:
 
