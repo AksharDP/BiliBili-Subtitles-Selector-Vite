@@ -8,7 +8,7 @@ import {
 } from "../utils/subtitleRenderer";
 import { ActiveModal, setActiveModal } from "./ModalManager";
 import { showSearchModal } from "./SearchModal";
-import { RED, GREEN, GREY, WHITE, BLUE } from "../utils/constants";
+import { RED, GREEN, GREY, WHITE, BLUE, PEARL } from "../utils/constants";
 
 export let resultsOverlay: HTMLDivElement | null = null;
 export let resultsModal: HTMLDivElement | null = null;
@@ -232,7 +232,7 @@ async function createResultItem(
     item.style.cssText = `
         padding: 15px;
         background-color: ${WHITE};
-        margin-bottom: 10px;
+        margin-bottom: 5px;
         border-radius: 4px;
         border: 1px solid rgba(0,0,0,0.15);
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -280,9 +280,9 @@ async function createResultItem(
                 <span class="cache-text" style="font-size: 12px; color: ${cacheIndicatorColor};">${cacheText}</span>
             </div>
             <div style="display: flex; gap: 6px;">
-                <button class="os-view-btn" data-subtitle-id="${fileId}" style="padding: 6px 3px 6px 6px; background-color: ${WHITE}; border: none; border-radius: 4px; cursor: pointer;">View</button>
-                <button class="os-save-file-btn" data-subtitle-id="${fileId}" style="padding: 6px 6px 6px 0px; background-color: ${WHITE}; border: none; border-radius: 4px; cursor: pointer;">Save As File</button>
-                <button class="os-download-btn" data-subtitle-id="${fileId}" style="padding: 6px 6px; background-color: ${BLUE}; color: ${WHITE}; border: none; border-radius: 4px; cursor: pointer;">Apply</button>
+                <button class="os-view-btn" data-subtitle-id="${fileId}" style="padding: 6px; background-color: ${PEARL}; border: none; border-radius: 4px; cursor: pointer;">View</button>
+                <button class="os-save-file-btn" data-subtitle-id="${fileId}" style="padding: 6px; background-color: ${PEARL}; border: none; border-radius: 4px; cursor: pointer;">Save As File</button>
+                <button class="os-apply-btn" data-subtitle-id="${fileId}" style="padding: 6px; background-color: ${BLUE}; color: ${WHITE}; border: none; border-radius: 4px; cursor: pointer;">Apply</button>
             </div>
         </div>
     `;
@@ -327,7 +327,7 @@ function attachResultButtonListeners(container: HTMLElement): void {
         const target = e.target as HTMLElement;
 
         const viewBtn = target.closest(".os-view-btn");
-        const downloadBtn = target.closest(".os-download-btn");
+        const downloadBtn = target.closest(".os-apply-btn");
         const saveBtn = target.closest(".os-save-file-btn");
         const resultItem = target.closest(
             ".os-result-item"
@@ -365,9 +365,7 @@ async function handleSubtitleDownload(
     if ((window as any).subtitleApplicationInProgress) return;
     (window as any).subtitleApplicationInProgress = true;
 
-    const button = resultElement.querySelector(
-        ".os-download-btn"
-    ) as HTMLElement;
+    const button = resultElement.querySelector(".os-apply-btn") as HTMLElement;
     const subtitleId = button?.dataset.subtitleId;
 
     if (!subtitleId) {
@@ -475,9 +473,7 @@ function resetDownloadButton(button: Element): void {
         button.innerHTML = "";
         button.textContent =
             originalText ||
-            (button.classList.contains("os-download-btn")
-                ? "Apply"
-                : "Save File");
+            (button.classList.contains("os-apply-btn") ? "Apply" : "Save File");
     }
 }
 
