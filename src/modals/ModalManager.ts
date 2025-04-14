@@ -1,17 +1,25 @@
-import { openUiBtn } from '../main';
-import { showSearchModal, searchOverlay, searchModal } from './SearchModal';
-import { showResultsModal, resultsOverlay, resultsModal } from './ResultsModal';
-import { showLoginModal, loginOverlay, loginModal } from './LoginModal';
-import { showSettingsModal, settingsOverlay, settingsModal } from './SettingsModal';
-import { showSubtitleViewer, subtitleViewerOverlay, subtitleViewerModal } from './SubtitleViewerModal';
+import { openUiBtn } from "../main";
+import { showSearchModal, searchOverlay, searchModal } from "./SearchModal";
+import { showResultsModal, resultsOverlay, resultsModal } from "./ResultsModal";
+import { showLoginModal, loginOverlay, loginModal } from "./LoginModal";
+import {
+    showSettingsModal,
+    settingsOverlay,
+    settingsModal,
+} from "./SettingsModal";
+import {
+    showSubtitleViewer,
+    subtitleViewerOverlay,
+    subtitleViewerModal,
+} from "./SubtitleViewerModal";
 
 export enum ActiveModal {
-    NONE = 'none',
-    LOGIN = 'login',
-    SEARCH = 'search',
-    RESULTS = 'results',
-    SUBTITLE_VIEWER = 'subtitle_viewer',
-    SETTINGS = 'settings'
+    NONE = "none",
+    LOGIN = "login",
+    SEARCH = "search",
+    RESULTS = "results",
+    SUBTITLE_VIEWER = "subtitle_viewer",
+    SETTINGS = "settings",
 }
 
 let lastActiveModal: ActiveModal = ActiveModal.LOGIN;
@@ -21,39 +29,40 @@ let lastSearchQuery: string | null = null;
 let lastSearchPage: number = 1;
 
 export function initModalManager(): void {
-    document.querySelectorAll('.os-modal-container').forEach(el => {
-        el.classList.add('os-modal');
+    document.querySelectorAll(".os-modal-container").forEach((el) => {
+        el.classList.add("os-modal");
     });
-    
-    document.addEventListener('click', handleDocumentClick);
+
+    document.addEventListener("click", handleDocumentClick);
 }
 
 function handleDocumentClick(event: MouseEvent): void {
     if (!isModalOpen) return;
-    
+
     if (window.isNavigatingBackToSearch) return;
-    
-    if (window.localStorage.getItem('preventSearchHiding') === 'true') {
-        window.localStorage.removeItem('preventSearchHiding');
+
+    if (window.localStorage.getItem("preventSearchHiding") === "true") {
+        window.localStorage.removeItem("preventSearchHiding");
         return;
     }
-    
+
     const target = event.target as HTMLElement;
-    
+
     const modalContainers = [
         loginModal,
         searchModal,
         resultsModal,
         settingsModal,
-        subtitleViewerModal
+        subtitleViewerModal,
     ];
-    
-    const isClickInsideModal = modalContainers.some(container =>
-        container && (container === target || container.contains(target))
+
+    const isClickInsideModal = modalContainers.some(
+        (container) =>
+            container && (container === target || container.contains(target))
     );
-    
+
     const isClickOnButton = openUiBtn.contains(target);
-    
+
     if (!isClickInsideModal && !isClickOnButton) {
         hideAllModals();
     }
@@ -65,60 +74,66 @@ function getOverlayMap() {
         [ActiveModal.SEARCH]: searchOverlay,
         [ActiveModal.RESULTS]: resultsOverlay,
         [ActiveModal.SETTINGS]: settingsOverlay,
-        [ActiveModal.SUBTITLE_VIEWER]: subtitleViewerOverlay
+        [ActiveModal.SUBTITLE_VIEWER]: subtitleViewerOverlay,
     };
 }
 
 function hideOtherModals(exceptModal: ActiveModal): void {
     Object.entries(getOverlayMap()).forEach(([modal, overlayElement]) => {
         if (modal !== exceptModal.toString()) {
-            const element = typeof overlayElement === 'string' ? document.getElementById(overlayElement) : overlayElement;
-            if (element) element.style.display = 'none';
+            const element =
+                typeof overlayElement === "string"
+                    ? document.getElementById(overlayElement)
+                    : overlayElement;
+            if (element) element.style.display = "none";
         }
     });
 }
 
 export function hideAllModals(): void {
-    Object.values(getOverlayMap()).forEach(overlay => {
-        if (overlay) overlay.style.display = 'none';
+    Object.values(getOverlayMap()).forEach((overlay) => {
+        if (overlay) overlay.style.display = "none";
     });
-    
+
     isModalOpen = false;
 }
 
 export function setActiveModal(modal: ActiveModal, data?: any): void {
-    console.log(`Modal state changing from ${lastActiveModal} to ${modal}`, data);
+    console.log(
+        `Modal state changing from ${lastActiveModal} to ${modal}`,
+        data
+    );
 
     if (modal === ActiveModal.SEARCH && data?.fromResults) {
         lastSearchPage = 1;
         lastActiveModal = ActiveModal.SEARCH;
         isModalOpen = true;
-        
+
         if (data?.preventHiding) {
-            window.localStorage.setItem('preventSearchHiding', 'true');
+            window.localStorage.setItem("preventSearchHiding", "true");
         }
-        
+
         if (data?.clearResults) {
-            window.localStorage.setItem('forceSearchModal', 'true');
+            window.localStorage.setItem("forceSearchModal", "true");
         }
-        
+
         return;
     }
-    
+
     if (modal === ActiveModal.SUBTITLE_VIEWER && data?.resultsVisible) {
         lastActiveModal = modal;
         isModalOpen = true;
-        
+
         if (data?.subtitleId) {
             lastViewedSubtitleId = data.subtitleId;
         }
-        
+
         return;
     }
-    
+
     lastActiveModal = modal;
     isModalOpen = modal !== ActiveModal.NONE;
-    
+
     if (modal === ActiveModal.SUBTITLE_VIEWER && data?.subtitleId) {
         lastViewedSubtitleId = data.subtitleId;
     } else if (modal === ActiveModal.SEARCH && data?.query) {
@@ -126,20 +141,21 @@ export function setActiveModal(modal: ActiveModal, data?: any): void {
     } else if (modal === ActiveModal.RESULTS && data?.page) {
         lastSearchPage = data.page;
     }
-    
+
     hideOtherModals(modal);
 }
 
 export function restoreLastActiveModal(): void {
     isModalOpen = true;
-    
-    const forceSearch = window.localStorage.getItem('forceSearchModal') === 'true';
+
+    const forceSearch =
+        window.localStorage.getItem("forceSearchModal") === "true";
     if (forceSearch) {
-        window.localStorage.removeItem('forceSearchModal');
+        window.localStorage.removeItem("forceSearchModal");
         showSearchModal();
         return;
     }
-    
+
     switch (lastActiveModal) {
         case ActiveModal.LOGIN:
             showLoginModal();
@@ -170,7 +186,7 @@ export {
     isModalOpen,
     lastViewedSubtitleId,
     lastSearchQuery,
-    lastSearchPage
+    lastSearchPage,
 };
 
 declare global {

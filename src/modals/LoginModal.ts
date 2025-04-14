@@ -1,11 +1,11 @@
-import { createDiv, createButton } from '../ui/components';
-import loginModalTemplate from '../templates/loginModal.html?raw';
-import { validateToken } from '../api/openSubtitles.ts';
-import { storeToken } from '../db/indexedDB';
-import { openUiBtn } from '../main.ts';
-import { showSearchModal } from './SearchModal.ts';
+import { createDiv, createButton } from "../ui/components";
+import loginModalTemplate from "../templates/loginModal.html?raw";
+import { validateToken } from "../api/openSubtitles.ts";
+import { storeToken } from "../db/indexedDB";
+import { openUiBtn } from "../main.ts";
+import { showSearchModal } from "./SearchModal.ts";
 import { ActiveModal, setActiveModal } from "./ModalManager.ts";
-import { RED, BLUE } from '../utils/constants.ts';
+import { RED, BLUE } from "../utils/constants.ts";
 
 export let loginOverlay: HTMLDivElement | null = null;
 export let loginModal: HTMLDivElement | null = null;
@@ -15,12 +15,17 @@ let cancelBtn: HTMLButtonElement | null = null;
 let statusElement: HTMLElement | null = null;
 
 export function createLoginButton(): HTMLButtonElement {
-    const button = createButton("opensubtitles-login-btn", "OpenSubtitles Login", undefined, `
+    const button = createButton(
+        "opensubtitles-login-btn",
+        "OpenSubtitles Login",
+        undefined,
+        `
         position: fixed; bottom: 50px; right: 20px; z-index: 9999;
         padding: 10px 15px; background-color: ${BLUE}; color: white;
         border: none; border-radius: 4px; cursor: pointer;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    `);
+    `
+    );
     document.body.appendChild(button);
     return button;
 }
@@ -54,11 +59,12 @@ export function createLoginModal(): void {
 
     loginOverlay = overlayDiv;
     loginModal = modalDiv;
-    loginForm = loginModal.querySelector("#opensubtitles-login-form") as HTMLFormElement;
+    loginForm = loginModal.querySelector(
+        "#opensubtitles-login-form"
+    ) as HTMLFormElement;
     tokenInput = loginModal.querySelector("#os-token") as HTMLInputElement;
     cancelBtn = loginModal.querySelector("#os-cancel-btn") as HTMLButtonElement;
     statusElement = loginModal.querySelector("#os-login-status") as HTMLElement;
-
 
     if (loginForm) {
         loginForm.addEventListener("submit", handleLoginSubmit);
@@ -129,7 +135,7 @@ export async function handleLoginSubmit(e: Event): Promise<void> {
                 token: result.token,
                 base_url: result.base_url,
                 timestamp: Date.now(),
-                userData: result.userData
+                userData: result.userData,
             });
 
             updateButtonToSubtitles(openUiBtn);
@@ -141,7 +147,10 @@ export async function handleLoginSubmit(e: Event): Promise<void> {
     } catch (error) {
         console.error("Login error:", error);
         if (statusEl) {
-            statusEl.textContent = error instanceof Error ? error.message : "Login failed. Please check your token and network connection.";
+            statusEl.textContent =
+                error instanceof Error
+                    ? error.message
+                    : "Login failed. Please check your token and network connection.";
             statusEl.style.color = RED;
             statusEl.style.display = "block";
         }

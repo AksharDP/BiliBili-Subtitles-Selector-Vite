@@ -1,4 +1,8 @@
-import { setupSubtitleDisplay, createSubtitleAnimationStyles, stopSubtitleDisplay } from './subtitleDisplay';
+import {
+    setupSubtitleDisplay,
+    createSubtitleAnimationStyles,
+    stopSubtitleDisplay,
+} from "./subtitleDisplay";
 
 export interface SubtitleCue {
     startTime: number;
@@ -16,7 +20,8 @@ export async function parseSubtitleContent(
         const trimmedContent = subtitleContent.trim();
         const isWebVTT = trimmedContent.startsWith("WEBVTT");
         let subtitleCues: SubtitleCue[];
-        if (isWebVTT) subtitleCues = await parseWebVTTCues(subtitleContent, videoPlayer);
+        if (isWebVTT)
+            subtitleCues = await parseWebVTTCues(subtitleContent, videoPlayer);
         else subtitleCues = parseSRTCues(subtitleContent);
 
         if (!subtitleCues || subtitleCues.length === 0) {
@@ -27,7 +32,11 @@ export async function parseSubtitleContent(
         window.activeCues = subtitleCues;
 
         stopSubtitleDisplay();
-        await setupSubtitleDisplay(subtitleCues, videoPlayer, subtitleTextElement);
+        await setupSubtitleDisplay(
+            subtitleCues,
+            videoPlayer,
+            subtitleTextElement
+        );
 
         return true;
     } catch (error) {
@@ -55,12 +64,12 @@ export async function parseWebVTTCues(
 
         const cues = await waitForCuesToLoad(track.track);
 
-        return cues.map(cue => {
+        return cues.map((cue) => {
             const vttCue = cue as VTTCue;
             return {
                 startTime: cue.startTime,
                 endTime: cue.endTime,
-                text: vttCue.text || ''
+                text: vttCue.text || "",
             };
         });
     } finally {
@@ -76,23 +85,23 @@ function waitForCuesToLoad(track: TextTrack): Promise<TextTrackCue[]> {
         }
 
         const handleLoad = () => {
-            track.removeEventListener('load', handleLoad);
+            track.removeEventListener("load", handleLoad);
             clearTimeout(timeoutId);
             resolve(Array.from(track.cues || []));
         };
 
         const handleError = () => {
-            track.removeEventListener('error', handleError);
+            track.removeEventListener("error", handleError);
             clearTimeout(timeoutId);
             reject(new Error("Failed to load WebVTT track"));
         };
 
-        track.addEventListener('load', handleLoad);
-        track.addEventListener('error', handleError);
+        track.addEventListener("load", handleLoad);
+        track.addEventListener("error", handleError);
 
         const timeoutId = setTimeout(() => {
-            track.removeEventListener('load', handleLoad);
-            track.removeEventListener('error', handleError);
+            track.removeEventListener("load", handleLoad);
+            track.removeEventListener("error", handleError);
 
             if (track.cues && track.cues.length > 0) {
                 resolve(Array.from(track.cues));
@@ -104,7 +113,8 @@ function waitForCuesToLoad(track: TextTrack): Promise<TextTrackCue[]> {
 }
 
 export function parseSRTCues(subtitleContent: string): SubtitleCue[] {
-    const regex = /(\d+)\r?\n(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})\r?\n([\s\S]*?)(?=\r?\n\r?\n\d+\r?\n|$)/g;
+    const regex =
+        /(\d+)\r?\n(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})\r?\n([\s\S]*?)(?=\r?\n\r?\n\d+\r?\n|$)/g;
 
     const cues: SubtitleCue[] = [];
     let match;
@@ -115,10 +125,10 @@ export function parseSRTCues(subtitleContent: string): SubtitleCue[] {
 
         const text = match[4]
             .trim()
-            .replace(/\r?\n/g, '<br>')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/&lt;br&gt;/g, '<br>');
+            .replace(/\r?\n/g, "<br>")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/&lt;br&gt;/g, "<br>");
 
         cues.push({ startTime, endTime, text });
     }
@@ -133,8 +143,8 @@ function timeStringToSeconds(timeString: string): number {
         return timeCache[timeString];
     }
 
-    const [time, ms] = timeString.split(',');
-    const [hours, minutes, seconds] = time.split(':').map(Number);
+    const [time, ms] = timeString.split(",");
+    const [hours, minutes, seconds] = time.split(":").map(Number);
 
     const result = hours * 3600 + minutes * 60 + seconds + Number(ms) / 1000;
 

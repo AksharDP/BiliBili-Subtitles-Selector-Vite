@@ -1,17 +1,20 @@
-import { createDiv } from '../ui/components';
-import subtitleViewerTemplate from '../templates/SubtitleViewer.html?raw';
-import { checkSubtitleInCache, getToken, loadSettingsFromIndexedDB, saveSettingsToIndexedDB } from '../db/indexedDB';
-import { fetchSubtitleData } from '../api/openSubtitles';
-import { setupSubtitleDisplay } from '../utils/subtitleDisplay';
-import { ActiveModal, setActiveModal } from './ModalManager';
-import { updateCacheStatusDisplay as updateResultsCacheStatus, resultsModal, resultsOverlay } from './ResultsModal';
+import { createDiv } from "../ui/components";
+import subtitleViewerTemplate from "../templates/SubtitleViewer.html?raw";
 import {
-    RED,
-    GREEN,
-    BLACK,
-    WHITE,
-    YELLOW
-} from '../utils/constants';
+    checkSubtitleInCache,
+    getToken,
+    loadSettingsFromIndexedDB,
+    saveSettingsToIndexedDB,
+} from "../db/indexedDB";
+import { fetchSubtitleData } from "../api/openSubtitles";
+import { setupSubtitleDisplay } from "../utils/subtitleDisplay";
+import { ActiveModal, setActiveModal } from "./ModalManager";
+import {
+    updateCacheStatusDisplay as updateResultsCacheStatus,
+    resultsModal,
+    resultsOverlay,
+} from "./ResultsModal";
+import { RED, GREEN, BLACK, WHITE, YELLOW } from "../utils/constants";
 
 interface TimestampInfo {
     startTime: number;
@@ -40,18 +43,19 @@ declare global {
     }
 }
 
-
 export function createSubtitleViewer(): void {
     if (document.getElementById("subtitle-viewer-overlay")) return;
 
     const overlayDiv = createDiv(
-        "subtitle-viewer-overlay", "",
+        "subtitle-viewer-overlay",
+        "",
         `position: fixed; top: 0; left: 0; width: 0; height: 100%; background-color: transparent;
         z-index: 9999; display: none; justify-content: center; align-items: center; pointer-events: none;`
     );
 
     const modalDiv = createDiv(
-        "subtitle-viewer-content", "",
+        "subtitle-viewer-content",
+        "",
         `background-color: ${WHITE}; padding: 0; border-radius: 6px; box-shadow: 0 4px 10px rgba(${BLACK}, 0.3);
         width: 500px; max-width: 90%; height: 80vh; display: flex; flex-direction: column; overflow: hidden;
         opacity: 0; position: absolute; pointer-events: auto; transition: transform 0.3s ease, opacity 0.3s ease;`
@@ -63,20 +67,35 @@ export function createSubtitleViewer(): void {
 
     subtitleViewerOverlay = overlayDiv;
     subtitleViewerModal = modalDiv;
-    closeBtn = subtitleViewerModal.querySelector("#subtitle-viewer-close-btn") as HTMLButtonElement;
-    copyBtn = subtitleViewerModal.querySelector("#subtitle-copy-btn") as HTMLButtonElement;
-    syncBtn = subtitleViewerModal.querySelector("#subtitle-sync") as HTMLButtonElement;
-    subtitleContentArea = subtitleViewerModal.querySelector("#subtitle-content") as HTMLTextAreaElement;
-    loadingIndicator = subtitleViewerModal.querySelector("#subtitle-loading") as HTMLElement;
-    viewerTitleElement = subtitleViewerModal.querySelector("#subtitle-viewer-title") as HTMLElement;
-    syncStatusElement = subtitleViewerModal.querySelector("#subtitle-sync-status") as HTMLElement;
-    cacheIndicatorElement = subtitleViewerModal.querySelector("#subtitle-cache-indicator") as HTMLElement;
+    closeBtn = subtitleViewerModal.querySelector(
+        "#subtitle-viewer-close-btn"
+    ) as HTMLButtonElement;
+    copyBtn = subtitleViewerModal.querySelector(
+        "#subtitle-copy-btn"
+    ) as HTMLButtonElement;
+    syncBtn = subtitleViewerModal.querySelector(
+        "#subtitle-sync"
+    ) as HTMLButtonElement;
+    subtitleContentArea = subtitleViewerModal.querySelector(
+        "#subtitle-content"
+    ) as HTMLTextAreaElement;
+    loadingIndicator = subtitleViewerModal.querySelector(
+        "#subtitle-loading"
+    ) as HTMLElement;
+    viewerTitleElement = subtitleViewerModal.querySelector(
+        "#subtitle-viewer-title"
+    ) as HTMLElement;
+    syncStatusElement = subtitleViewerModal.querySelector(
+        "#subtitle-sync-status"
+    ) as HTMLElement;
+    cacheIndicatorElement = subtitleViewerModal.querySelector(
+        "#subtitle-cache-indicator"
+    ) as HTMLElement;
 
     closeBtn?.addEventListener("click", hideSubtitleViewer);
     copyBtn?.addEventListener("click", copySubtitleToClipboard);
     syncBtn?.addEventListener("click", autoSyncSubtitles);
     subtitleContentArea?.addEventListener("click", handleTimestampClick);
-
 
     if (!document.getElementById("subtitle-viewer-styles")) {
         const style = document.createElement("style");
@@ -88,14 +107,17 @@ export function createSubtitleViewer(): void {
     }
 }
 
-
 export function showSubtitleViewer(subtitleId: string | null): void {
     if (!subtitleId) {
         console.error("Invalid subtitle ID:", subtitleId);
         return;
     }
 
-    if (subtitleViewerOverlay && subtitleViewerOverlay.style.display === "flex" && subtitleViewerOverlay.dataset.currentSubtitle === subtitleId) {
+    if (
+        subtitleViewerOverlay &&
+        subtitleViewerOverlay.style.display === "flex" &&
+        subtitleViewerOverlay.dataset.currentSubtitle === subtitleId
+    ) {
         console.log("Already showing this subtitle.");
         return;
     }
@@ -111,8 +133,18 @@ export function showSubtitleViewer(subtitleId: string | null): void {
     const contentArea = subtitleContentArea;
     const titleEl = viewerTitleElement;
 
-    if (!vOverlay || !vContent || !loadingEl || !contentArea || !titleEl || !resModal || !resOverlay) {
-        console.error("Required elements (viewer or results) not found or initialized");
+    if (
+        !vOverlay ||
+        !vContent ||
+        !loadingEl ||
+        !contentArea ||
+        !titleEl ||
+        !resModal ||
+        !resOverlay
+    ) {
+        console.error(
+            "Required elements (viewer or results) not found or initialized"
+        );
         return;
     }
 
@@ -121,10 +153,14 @@ export function showSubtitleViewer(subtitleId: string | null): void {
     contentArea.style.whiteSpace = "pre-wrap";
     contentArea.style.overflowWrap = "break-word";
     contentArea.style.overflowX = "hidden";
-    contentArea.style.fontFamily = "'Nunito', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif";
+    contentArea.style.fontFamily =
+        "'Nunito', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif";
     contentArea.style.fontSize = "16px";
 
-    setActiveModal(ActiveModal.SUBTITLE_VIEWER, { subtitleId, resultsVisible: true });
+    setActiveModal(ActiveModal.SUBTITLE_VIEWER, {
+        subtitleId,
+        resultsVisible: true,
+    });
 
     const windowWidth = window.innerWidth;
     const resultsWidth = 500;
@@ -169,9 +205,10 @@ export function showSubtitleViewer(subtitleId: string | null): void {
         contentArea.value = "";
 
         loadSubtitleContent(subtitleId)
-            .then(data => {
+            .then((data) => {
                 if (data && data.content) {
-                    titleEl.textContent = data.title || data.fileName || "Subtitle Content";
+                    titleEl.textContent =
+                        data.title || data.fileName || "Subtitle Content";
                     contentArea.value = data.content;
 
                     const timestamps = processSubtitleTimestamps(data.content);
@@ -180,15 +217,24 @@ export function showSubtitleViewer(subtitleId: string | null): void {
                     if (syncStatusElement) {
                         syncStatusElement.textContent = `Found ${timestamps.length} timestamps. Click any timestamp to sync with video.`;
                     }
-                    if (cacheIndicatorElement && cacheIndicatorElement.style.backgroundColor !== "green") {
+                    if (
+                        cacheIndicatorElement &&
+                        cacheIndicatorElement.style.backgroundColor !== "green"
+                    ) {
                     }
                 } else {
-                    contentArea.value = `No subtitle content found.\n\n${JSON.stringify(data, null, 2)}`;
+                    contentArea.value = `No subtitle content found.\n\n${JSON.stringify(
+                        data,
+                        null,
+                        2
+                    )}`;
                 }
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error("Error loading subtitle:", error);
-                contentArea.value = `Error: ${error.message || "Failed to load subtitle"}`;
+                contentArea.value = `Error: ${
+                    error.message || "Failed to load subtitle"
+                }`;
                 if (syncStatusElement) {
                     syncStatusElement.textContent = "Error loading subtitle.";
                 }
@@ -233,10 +279,8 @@ export function hideSubtitleViewer(): void {
         if (getActiveModal() === ActiveModal.SUBTITLE_VIEWER) {
             setActiveModal(ActiveModal.RESULTS);
         }
-
     }, 300);
 }
-
 
 async function loadSubtitleContent(subtitleId: string): Promise<any> {
     try {
@@ -256,7 +300,6 @@ async function loadSubtitleContent(subtitleId: string): Promise<any> {
         const subtitleData = await fetchSubtitleData(tokenData, subtitleId);
         setTimeout(() => updateResultsCacheStatus(subtitleId), 300);
         return subtitleData;
-
     } catch (error) {
         console.error("Error loading subtitle content:", error);
         throw error;
@@ -265,44 +308,49 @@ async function loadSubtitleContent(subtitleId: string): Promise<any> {
 
 function processSubtitleTimestamps(content: string): TimestampInfo[] {
     if (!content) return [];
-    const timestampRegex = /(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/g;
+    const timestampRegex =
+        /(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/g;
     const timestamps: TimestampInfo[] = [];
     let match;
 
     while ((match = timestampRegex.exec(content)) !== null) {
         const textStartIndex = match.index + match[0].length;
-        let nextMatchIndex = content.indexOf('\n\n', textStartIndex);
+        let nextMatchIndex = content.indexOf("\n\n", textStartIndex);
         if (nextMatchIndex === -1) {
             nextMatchIndex = content.length;
         }
         let textEndIndex = nextMatchIndex;
-        const potentialNextNumberMatch = /^\d+\s*$/m.exec(content.substring(textStartIndex, textEndIndex));
+        const potentialNextNumberMatch = /^\d+\s*$/m.exec(
+            content.substring(textStartIndex, textEndIndex)
+        );
         if (potentialNextNumberMatch) {
             textEndIndex = textStartIndex + potentialNextNumberMatch.index;
         }
 
-        const subtitleText = content.substring(textStartIndex, textEndIndex).trim();
+        const subtitleText = content
+            .substring(textStartIndex, textEndIndex)
+            .trim();
 
         timestamps.push({
             startTime: timeToSeconds(match[1]),
             endTime: timeToSeconds(match[2]),
             startIndex: match.index,
             endIndex: textEndIndex,
-            text: subtitleText
+            text: subtitleText,
         });
     }
     return timestamps;
 }
 
-
 function handleTimestampClick(): void {
     if (!subtitleContentArea || !window.subtitleTimestamps?.length) return;
 
     const clickPosition = getTextareaClickPosition(subtitleContentArea);
-    
-    let timestamp = window.subtitleTimestamps.find(t =>
-        clickPosition >= t.startIndex && clickPosition <= t.endIndex);
-    
+
+    let timestamp = window.subtitleTimestamps.find(
+        (t) => clickPosition >= t.startIndex && clickPosition <= t.endIndex
+    );
+
     if (!timestamp) {
         const sortedTimestamps = [...window.subtitleTimestamps].sort((a, b) => {
             const distA = Math.min(
@@ -315,57 +363,72 @@ function handleTimestampClick(): void {
             );
             return distA - distB;
         });
-        
+
         if (sortedTimestamps.length > 0) {
             const closestTimestamp = sortedTimestamps[0];
             const distance = Math.min(
                 Math.abs(clickPosition - closestTimestamp.startIndex),
                 Math.abs(clickPosition - closestTimestamp.endIndex)
             );
-            
+
             if (distance < 50) {
                 timestamp = closestTimestamp;
             }
         }
     }
-    
+
     if (!timestamp) return;
 
-    const videoPlayer = document.querySelector('video');
-    if (!videoPlayer || videoPlayer.getAttribute("src")?.indexOf("error") != -1) {
+    const videoPlayer = document.querySelector("video");
+    if (
+        !videoPlayer ||
+        videoPlayer.getAttribute("src")?.indexOf("error") != -1
+    ) {
         if (syncStatusElement) {
             syncStatusElement.textContent = `Video Player not found or not loaded.`;
             syncStatusElement.style.color = RED;
         }
-        return
-    };
+        return;
+    }
 
     const offset = videoPlayer.currentTime - timestamp.startTime;
     window.subtitleSyncOffset = offset;
 
-    loadSettingsFromIndexedDB().then(settings => {
-        const newSettings = { ...settings, syncOffset: offset };
-        saveSettingsToIndexedDB(newSettings);
+    loadSettingsFromIndexedDB()
+        .then((settings) => {
+            const newSettings = { ...settings, syncOffset: offset };
+            saveSettingsToIndexedDB(newSettings);
 
-        if (syncStatusElement) {
-            syncStatusElement.textContent = `Synced! Offset: ${offset.toFixed(2)}s`;
-            syncStatusElement.style.color = GREEN;
-        }
+            if (syncStatusElement) {
+                syncStatusElement.textContent = `Synced! Offset: ${offset.toFixed(
+                    2
+                )}s`;
+                syncStatusElement.style.color = GREEN;
+            }
 
-        const textElement = document.querySelector("[id^='bilibili-subtitles-text-']");
-        if (textElement && window.activeCues && videoPlayer) {
-            setupSubtitleDisplay(window.activeCues, videoPlayer, textElement);
-        }
-    }).catch(error => console.error("Failed to save sync offset:", error));
+            const textElement = document.querySelector(
+                "[id^='bilibili-subtitles-text-']"
+            );
+            if (textElement && window.activeCues && videoPlayer) {
+                setupSubtitleDisplay(
+                    window.activeCues,
+                    videoPlayer,
+                    textElement
+                );
+            }
+        })
+        .catch((error) => console.error("Failed to save sync offset:", error));
 }
 
-
 function getTextareaClickPosition(textarea: HTMLTextAreaElement): number {
-    if (typeof textarea.selectionStart === 'number') {
+    if (typeof textarea.selectionStart === "number") {
         try {
             return textarea.selectionStart;
-        } catch(err) {
-            console.warn("Error estimating textarea click position, using selectionStart", err);
+        } catch (err) {
+            console.warn(
+                "Error estimating textarea click position, using selectionStart",
+                err
+            );
             return textarea.selectionStart ?? 0;
         }
     }
@@ -373,42 +436,52 @@ function getTextareaClickPosition(textarea: HTMLTextAreaElement): number {
     return 0;
 }
 
-
 function autoSyncSubtitles(): void {
     if (!subtitleContentArea) {
-        if (syncStatusElement) syncStatusElement.textContent = "Subtitle content area not found.";
+        if (syncStatusElement)
+            syncStatusElement.textContent = "Subtitle content area not found.";
         return;
     }
 
     const cursorPos = subtitleContentArea.selectionStart;
     if (cursorPos === null || isNaN(cursorPos)) {
-        if (syncStatusElement) syncStatusElement.textContent = "Cannot determine cursor position.";
+        if (syncStatusElement)
+            syncStatusElement.textContent = "Cannot determine cursor position.";
         return;
     }
 
     if (!window.subtitleTimestamps?.length) {
-        if (syncStatusElement) syncStatusElement.textContent = "No timestamps processed for syncing.";
+        if (syncStatusElement)
+            syncStatusElement.textContent =
+                "No timestamps processed for syncing.";
         return;
     }
 
-    let selectedTimestamp = window.subtitleTimestamps.find(ts => cursorPos >= ts.startIndex && cursorPos <= ts.endIndex);
+    let selectedTimestamp = window.subtitleTimestamps.find(
+        (ts) => cursorPos >= ts.startIndex && cursorPos <= ts.endIndex
+    );
 
     if (!selectedTimestamp) {
         selectedTimestamp = window.subtitleTimestamps
-            .filter(ts => ts.startTime !== undefined)
+            .filter((ts) => ts.startTime !== undefined)
             .reduce((prev, curr) =>
-                Math.abs(cursorPos - prev.startIndex) <= Math.abs(cursorPos - curr.startIndex) ? prev : curr
+                Math.abs(cursorPos - prev.startIndex) <=
+                Math.abs(cursorPos - curr.startIndex)
+                    ? prev
+                    : curr
             );
     }
     if (!selectedTimestamp || selectedTimestamp.startTime === undefined) {
-        if (syncStatusElement) syncStatusElement.textContent = "Could not find a valid timestamp near cursor.";
+        if (syncStatusElement)
+            syncStatusElement.textContent =
+                "Could not find a valid timestamp near cursor.";
         return;
     }
 
-
-    const videoPlayer = document.querySelector('video');
+    const videoPlayer = document.querySelector("video");
     if (!videoPlayer) {
-        if (syncStatusElement) syncStatusElement.textContent = "Video player not found.";
+        if (syncStatusElement)
+            syncStatusElement.textContent = "Video player not found.";
         return;
     }
 
@@ -416,36 +489,47 @@ function autoSyncSubtitles(): void {
     const offset = currentVideoTime - selectedTimestamp.startTime;
     window.subtitleSyncOffset = offset;
 
-    loadSettingsFromIndexedDB().then(settings => {
-        const newSettings = { ...settings, syncOffset: offset };
-        saveSettingsToIndexedDB(newSettings);
+    loadSettingsFromIndexedDB()
+        .then((settings) => {
+            const newSettings = { ...settings, syncOffset: offset };
+            saveSettingsToIndexedDB(newSettings);
 
-        if (syncStatusElement) {
-            syncStatusElement.textContent = `Synced at cursor! Offset: ${offset.toFixed(2)}s`;
-            syncStatusElement.style.color = GREEN;
-        }
+            if (syncStatusElement) {
+                syncStatusElement.textContent = `Synced at cursor! Offset: ${offset.toFixed(
+                    2
+                )}s`;
+                syncStatusElement.style.color = GREEN;
+            }
 
-        const textElement = document.querySelector("[id^='bilibili-subtitles-text-']");
-        if (textElement && window.activeCues && videoPlayer) {
-            setupSubtitleDisplay(window.activeCues, videoPlayer, textElement);
-        }
-    }).catch(error => {
-        console.error("Failed to save sync offset:", error);
-        if (syncStatusElement) {
-            syncStatusElement.textContent = `Error saving sync offset.`;
-            syncStatusElement.style.color = RED;
-        }
-    });
+            const textElement = document.querySelector(
+                "[id^='bilibili-subtitles-text-']"
+            );
+            if (textElement && window.activeCues && videoPlayer) {
+                setupSubtitleDisplay(
+                    window.activeCues,
+                    videoPlayer,
+                    textElement
+                );
+            }
+        })
+        .catch((error) => {
+            console.error("Failed to save sync offset:", error);
+            if (syncStatusElement) {
+                syncStatusElement.textContent = `Error saving sync offset.`;
+                syncStatusElement.style.color = RED;
+            }
+        });
 }
-
 
 function copySubtitleToClipboard(): void {
     if (!subtitleContentArea || !subtitleContentArea.value) {
-        if (syncStatusElement) syncStatusElement.textContent = "Nothing to copy.";
+        if (syncStatusElement)
+            syncStatusElement.textContent = "Nothing to copy.";
         return;
     }
 
-    navigator.clipboard.writeText(subtitleContentArea.value)
+    navigator.clipboard
+        .writeText(subtitleContentArea.value)
         .then(() => {
             if (syncStatusElement) {
                 const originalText = syncStatusElement.textContent || "";
@@ -453,14 +537,18 @@ function copySubtitleToClipboard(): void {
                 syncStatusElement.style.color = GREEN;
                 setTimeout(() => {
                     if (syncStatusElement) {
-                        syncStatusElement.textContent = originalText.startsWith("Synced") || originalText.startsWith("Found") ? originalText : "";
-                        syncStatusElement.style.color = '';
+                        syncStatusElement.textContent =
+                            originalText.startsWith("Synced") ||
+                            originalText.startsWith("Found")
+                                ? originalText
+                                : "";
+                        syncStatusElement.style.color = "";
                     }
                 }, 2000);
             }
         })
-        .catch(err => {
-            console.error('Failed to copy text: ', err);
+        .catch((err) => {
+            console.error("Failed to copy text: ", err);
             if (syncStatusElement) {
                 syncStatusElement.textContent = "Failed to copy!";
                 syncStatusElement.style.color = RED;
@@ -468,17 +556,21 @@ function copySubtitleToClipboard(): void {
         });
 }
 
-
 function timeToSeconds(timeString: string): number {
     try {
-        const parts = timeString.split(':');
-        const secondsAndMillis = parts[2].split(',');
+        const parts = timeString.split(":");
+        const secondsAndMillis = parts[2].split(",");
         const hours = parseInt(parts[0], 10);
         const minutes = parseInt(parts[1], 10);
         const seconds = parseInt(secondsAndMillis[0], 10);
         const milliseconds = parseInt(secondsAndMillis[1], 10);
 
-        if (isNaN(hours) || isNaN(minutes) || isNaN(seconds) || isNaN(milliseconds)) {
+        if (
+            isNaN(hours) ||
+            isNaN(minutes) ||
+            isNaN(seconds) ||
+            isNaN(milliseconds)
+        ) {
             throw new Error("Invalid time component");
         }
 

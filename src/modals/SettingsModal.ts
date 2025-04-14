@@ -1,25 +1,21 @@
-import { createDiv } from '../ui/components';
+import { createDiv } from "../ui/components";
 import {
     getTokenDataFromDB,
     getUserInfoFromDB,
     loadSettingsFromIndexedDB,
     saveSettingsToIndexedDB,
-    saveUserInfoToDB
-} from '../db/indexedDB';
-import { getUserInfo } from '../api/openSubtitles';
-import { ActiveModal, setActiveModal } from './ModalManager';
-import { showSearchModal } from './SearchModal';
-import settingsModalTemplate from '../templates/settingsModal.html?raw';
-import { stopSubtitleDisplay, setupSubtitleDisplay } from '../utils/subtitleDisplay';
-import { hexToRgb } from '../utils/subtitleRenderer';
+    saveUserInfoToDB,
+} from "../db/indexedDB";
+import { getUserInfo } from "../api/openSubtitles";
+import { ActiveModal, setActiveModal } from "./ModalManager";
+import { showSearchModal } from "./SearchModal";
+import settingsModalTemplate from "../templates/settingsModal.html?raw";
 import {
-    RED,
-    BLUE,
-    GREEN,
-    GREY,
-    WHITE,
-    BLACK
-} from '../utils/constants';
+    stopSubtitleDisplay,
+    setupSubtitleDisplay,
+} from "../utils/subtitleDisplay";
+import { hexToRgb } from "../utils/subtitleRenderer";
+import { RED, BLUE, GREEN, GREY, WHITE, BLACK } from "../utils/constants";
 
 export let settingsOverlay: HTMLDivElement | null = null;
 export let settingsModal: HTMLDivElement | null = null;
@@ -70,34 +66,44 @@ let animationDurationValue: HTMLElement | null = null;
 
 let saveBtn: HTMLButtonElement | null = null;
 
-
 let currentFontColor = WHITE;
 let currentOutlineColor = BLACK;
 let currentBgColor = BLACK;
 
-
 export function createSettingsModal(): void {
-    const settingsOverlayDiv = createDiv("opensubtitles-settings-overlay", "", `
+    const settingsOverlayDiv = createDiv(
+        "opensubtitles-settings-overlay",
+        "",
+        `
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background-color: rgba(0, 0, 0, 0.5); z-index: 10001; display: none;
         justify-content: center; align-items: center;
-    `);
+    `
+    );
 
-    const settingsModalDiv = createDiv("opensubtitles-settings-modal", "", `
+    const settingsModalDiv = createDiv(
+        "opensubtitles-settings-modal",
+        "",
+        `
         background-color: white; padding: 0; border-radius: 6px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); width: 500px; max-width: 90%;
         max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
-    `);
+    `
+    );
 
     settingsModalDiv.innerHTML = settingsModalTemplate;
 
-    const notificationPopupDiv = createDiv("os-settings-notification", "Settings saved successfully!", `
+    const notificationPopupDiv = createDiv(
+        "os-settings-notification",
+        "Settings saved successfully!",
+        `
         position: fixed; top: 20px; right: 20px; background-color: ${GREEN};
         color: white; padding: 12px 20px; border-radius: 4px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         font-size: 14px; z-index: 10002; opacity: 0; transform: translateY(-20px);
         transition: all 0.3s ease; pointer-events: none;
-    `);
+    `
+    );
     document.body.appendChild(notificationPopupDiv);
 
     settingsOverlayDiv.appendChild(settingsModalDiv);
@@ -107,54 +113,120 @@ export function createSettingsModal(): void {
     settingsModal = settingsModalDiv;
     notificationPopup = notificationPopupDiv;
 
-    closeBtn = settingsModal.querySelector("#os-settings-close-btn") as HTMLButtonElement;
-    backBtn = settingsModal.querySelector("#os-settings-back-btn") as HTMLButtonElement;
+    closeBtn = settingsModal.querySelector(
+        "#os-settings-close-btn"
+    ) as HTMLButtonElement;
+    backBtn = settingsModal.querySelector(
+        "#os-settings-back-btn"
+    ) as HTMLButtonElement;
 
-    userInfoContainer = settingsModal.querySelector("#os-user-info") as HTMLElement;
-    refreshUserInfoBtn = settingsModal.querySelector("#os-refresh-user-info") as HTMLButtonElement;
+    userInfoContainer = settingsModal.querySelector(
+        "#os-user-info"
+    ) as HTMLElement;
+    refreshUserInfoBtn = settingsModal.querySelector(
+        "#os-refresh-user-info"
+    ) as HTMLButtonElement;
 
-    fontSizeDecreaseBtn = settingsModal.querySelector("#os-font-size-decrease") as HTMLButtonElement;
-    fontSizeIncreaseBtn = settingsModal.querySelector("#os-font-size-increase") as HTMLButtonElement;
-    fontSizeValue = settingsModal.querySelector("#os-font-size-value") as HTMLElement;
-    fontColorBtns = settingsModal.querySelectorAll(".os-font-color-btn") as NodeListOf<HTMLElement>;
-    customFontColorPicker = settingsModal.querySelector("#os-custom-font-color") as HTMLInputElement;
-    hexFontColorInput = settingsModal.querySelector("#os-hex-color-input") as HTMLInputElement;
-    customFontColorContainer = settingsModal.querySelector("#os-custom-color-container") as HTMLElement;
+    fontSizeDecreaseBtn = settingsModal.querySelector(
+        "#os-font-size-decrease"
+    ) as HTMLButtonElement;
+    fontSizeIncreaseBtn = settingsModal.querySelector(
+        "#os-font-size-increase"
+    ) as HTMLButtonElement;
+    fontSizeValue = settingsModal.querySelector(
+        "#os-font-size-value"
+    ) as HTMLElement;
+    fontColorBtns = settingsModal.querySelectorAll(
+        ".os-font-color-btn"
+    ) as NodeListOf<HTMLElement>;
+    customFontColorPicker = settingsModal.querySelector(
+        "#os-custom-font-color"
+    ) as HTMLInputElement;
+    hexFontColorInput = settingsModal.querySelector(
+        "#os-hex-color-input"
+    ) as HTMLInputElement;
+    customFontColorContainer = settingsModal.querySelector(
+        "#os-custom-color-container"
+    ) as HTMLElement;
 
     bgToggle = settingsModal.querySelector("#os-bg-toggle") as HTMLInputElement;
     bgToggleSpan = bgToggle?.nextElementSibling as HTMLElement | null;
-    bgOptionsContainer = settingsModal.querySelector("#os-bg-options") as HTMLElement;
-    bgColorBtns = settingsModal.querySelectorAll(".os-bg-color-btn") as NodeListOf<HTMLElement>;
-    customBgColorPicker = settingsModal.querySelector("#os-custom-bg-color") as HTMLInputElement;
-    customBgColorContainer = settingsModal.querySelector("#os-bg-color-container") as HTMLElement;
-    hexBgColorInput = settingsModal.querySelector("#os-bg-hex-color-input") as HTMLInputElement;
-    bgOpacitySlider = settingsModal.querySelector("#os-bg-opacity") as HTMLInputElement;
-    bgOpacityValue = settingsModal.querySelector("#os-bg-opacity-value") as HTMLElement;
+    bgOptionsContainer = settingsModal.querySelector(
+        "#os-bg-options"
+    ) as HTMLElement;
+    bgColorBtns = settingsModal.querySelectorAll(
+        ".os-bg-color-btn"
+    ) as NodeListOf<HTMLElement>;
+    customBgColorPicker = settingsModal.querySelector(
+        "#os-custom-bg-color"
+    ) as HTMLInputElement;
+    customBgColorContainer = settingsModal.querySelector(
+        "#os-bg-color-container"
+    ) as HTMLElement;
+    hexBgColorInput = settingsModal.querySelector(
+        "#os-bg-hex-color-input"
+    ) as HTMLInputElement;
+    bgOpacitySlider = settingsModal.querySelector(
+        "#os-bg-opacity"
+    ) as HTMLInputElement;
+    bgOpacityValue = settingsModal.querySelector(
+        "#os-bg-opacity-value"
+    ) as HTMLElement;
 
-    outlineToggle = settingsModal.querySelector("#os-outline-toggle") as HTMLInputElement;
+    outlineToggle = settingsModal.querySelector(
+        "#os-outline-toggle"
+    ) as HTMLInputElement;
     outlineToggleSpan = outlineToggle?.nextElementSibling as HTMLElement | null;
-    outlineOptionsContainer = settingsModal.querySelector("#os-outline-options") as HTMLElement;
-    outlineColorBtns = settingsModal.querySelectorAll(".os-outline-color-btn") as NodeListOf<HTMLElement>;
-    customOutlineColorPicker = settingsModal.querySelector("#os-custom-outline-color") as HTMLInputElement;
-    customOutlineColorContainer = settingsModal.querySelector("#os-outline-color-container") as HTMLElement;
-    hexOutlineColorInput = settingsModal.querySelector("#os-outline-hex-color-input") as HTMLInputElement;
+    outlineOptionsContainer = settingsModal.querySelector(
+        "#os-outline-options"
+    ) as HTMLElement;
+    outlineColorBtns = settingsModal.querySelectorAll(
+        ".os-outline-color-btn"
+    ) as NodeListOf<HTMLElement>;
+    customOutlineColorPicker = settingsModal.querySelector(
+        "#os-custom-outline-color"
+    ) as HTMLInputElement;
+    customOutlineColorContainer = settingsModal.querySelector(
+        "#os-outline-color-container"
+    ) as HTMLElement;
+    hexOutlineColorInput = settingsModal.querySelector(
+        "#os-outline-hex-color-input"
+    ) as HTMLInputElement;
 
-    syncSlider = settingsModal.querySelector("#os-sync-slider") as HTMLInputElement;
-    syncValueInput = settingsModal.querySelector("#os-sync-value") as HTMLInputElement;
-    syncResetBtn = settingsModal.querySelector("#os-sync-reset") as HTMLButtonElement;
+    syncSlider = settingsModal.querySelector(
+        "#os-sync-slider"
+    ) as HTMLInputElement;
+    syncValueInput = settingsModal.querySelector(
+        "#os-sync-value"
+    ) as HTMLInputElement;
+    syncResetBtn = settingsModal.querySelector(
+        "#os-sync-reset"
+    ) as HTMLButtonElement;
 
-    animationToggle = settingsModal.querySelector("#os-animation-toggle") as HTMLInputElement;
-    animationToggleSpan = animationToggle?.nextElementSibling as HTMLElement | null;
-    animationOptionsContainer = settingsModal.querySelector("#os-animation-options") as HTMLElement;
-    animationTypeSelect = settingsModal.querySelector("#os-animation-type") as HTMLSelectElement;
-    animationDurationSlider = settingsModal.querySelector("#os-animation-duration") as HTMLInputElement;
-    animationDurationValue = settingsModal.querySelector("#os-animation-duration-value") as HTMLElement;
+    animationToggle = settingsModal.querySelector(
+        "#os-animation-toggle"
+    ) as HTMLInputElement;
+    animationToggleSpan =
+        animationToggle?.nextElementSibling as HTMLElement | null;
+    animationOptionsContainer = settingsModal.querySelector(
+        "#os-animation-options"
+    ) as HTMLElement;
+    animationTypeSelect = settingsModal.querySelector(
+        "#os-animation-type"
+    ) as HTMLSelectElement;
+    animationDurationSlider = settingsModal.querySelector(
+        "#os-animation-duration"
+    ) as HTMLInputElement;
+    animationDurationValue = settingsModal.querySelector(
+        "#os-animation-duration-value"
+    ) as HTMLElement;
 
-    saveBtn = settingsModal.querySelector("#os-settings-save-btn") as HTMLButtonElement;
+    saveBtn = settingsModal.querySelector(
+        "#os-settings-save-btn"
+    ) as HTMLButtonElement;
 
     setupSettingsEventListeners();
 }
-
 
 function setupSettingsEventListeners(): void {
     closeBtn?.addEventListener("click", hideSettingsModal);
@@ -163,8 +235,8 @@ function setupSettingsEventListeners(): void {
     fontSizeDecreaseBtn?.addEventListener("click", () => updateFontSize(-1));
     fontSizeIncreaseBtn?.addEventListener("click", () => updateFontSize(1));
 
-    fontColorBtns?.forEach(btn => {
-        btn.addEventListener("click", e => {
+    fontColorBtns?.forEach((btn) => {
+        btn.addEventListener("click", (e) => {
             const target = e.target as HTMLElement;
             if (target.dataset.color) {
                 setFontColor(target.dataset.color);
@@ -173,33 +245,43 @@ function setupSettingsEventListeners(): void {
         });
     });
 
-    customFontColorPicker?.addEventListener("input", e => {
+    customFontColorPicker?.addEventListener("input", (e) => {
         const target = e.target as HTMLInputElement;
         setFontColor(target.value);
         clearFontColorSelection();
-        if (hexFontColorInput) hexFontColorInput.value = target.value.replace('#', '');
-        if (customFontColorContainer) customFontColorContainer.style.border = `2px solid ${BLUE}`;
+        if (hexFontColorInput)
+            hexFontColorInput.value = target.value.replace("#", "");
+        if (customFontColorContainer)
+            customFontColorContainer.style.border = `2px solid ${BLUE}`;
     });
 
-    hexFontColorInput?.addEventListener("input", e => handleHexColorInput(e, 'font'));
+    hexFontColorInput?.addEventListener("input", (e) =>
+        handleHexColorInput(e, "font")
+    );
 
     bgToggle?.addEventListener("change", handleBgToggle);
 
-    bgColorBtns?.forEach(btn => {
-        btn.addEventListener("click", e => {
+    bgColorBtns?.forEach((btn) => {
+        btn.addEventListener("click", (e) => {
             const target = e.target as HTMLElement;
             if (target.dataset.color) {
                 setBgColor(target.dataset.color);
                 highlightSelectedBgColor(target.dataset.color);
-                if (hexBgColorInput) hexBgColorInput.value = target.dataset.color.replace('#', '');
+                if (hexBgColorInput)
+                    hexBgColorInput.value = target.dataset.color.replace(
+                        "#",
+                        ""
+                    );
             }
         });
     });
 
     customBgColorPicker?.addEventListener("input", handleBgColorPicker);
-    hexBgColorInput?.addEventListener("input", e => handleHexColorInput(e, 'bg'));
+    hexBgColorInput?.addEventListener("input", (e) =>
+        handleHexColorInput(e, "bg")
+    );
 
-    bgOpacitySlider?.addEventListener("input", e => {
+    bgOpacitySlider?.addEventListener("input", (e) => {
         const target = e.target as HTMLInputElement;
         const value = target.value;
         if (bgOpacityValue) bgOpacityValue.textContent = value;
@@ -208,21 +290,30 @@ function setupSettingsEventListeners(): void {
 
     outlineToggle?.addEventListener("change", handleOutlineToggle);
 
-    outlineColorBtns?.forEach(btn => {
-        btn.addEventListener("click", e => {
+    outlineColorBtns?.forEach((btn) => {
+        btn.addEventListener("click", (e) => {
             const target = e.target as HTMLElement;
             if (target.dataset.color) {
                 setOutlineColor(target.dataset.color);
                 highlightSelectedOutlineColor(target.dataset.color);
-                if (hexOutlineColorInput) hexOutlineColorInput.value = target.dataset.color.replace('#', '');
+                if (hexOutlineColorInput)
+                    hexOutlineColorInput.value = target.dataset.color.replace(
+                        "#",
+                        ""
+                    );
             }
         });
     });
 
-    customOutlineColorPicker?.addEventListener("input", handleOutlineColorPickerInput);
-    hexOutlineColorInput?.addEventListener("input", e => handleHexColorInput(e, 'outline'));
+    customOutlineColorPicker?.addEventListener(
+        "input",
+        handleOutlineColorPickerInput
+    );
+    hexOutlineColorInput?.addEventListener("input", (e) =>
+        handleHexColorInput(e, "outline")
+    );
 
-    syncSlider?.addEventListener("input", e => {
+    syncSlider?.addEventListener("input", (e) => {
         const target = e.target as HTMLInputElement;
         if (syncValueInput) syncValueInput.value = target.value;
         saveSettingsDebounced();
@@ -233,9 +324,10 @@ function setupSettingsEventListeners(): void {
 
     animationToggle?.addEventListener("change", handleAnimationToggle);
     animationTypeSelect?.addEventListener("change", saveSettingsDebounced);
-    animationDurationSlider?.addEventListener("input", e => {
+    animationDurationSlider?.addEventListener("input", (e) => {
         const target = e.target as HTMLInputElement;
-        if (animationDurationValue) animationDurationValue.textContent = `${target.value}s`;
+        if (animationDurationValue)
+            animationDurationValue.textContent = `${target.value}s`;
         saveSettingsDebounced();
     });
 
@@ -243,7 +335,6 @@ function setupSettingsEventListeners(): void {
 
     saveBtn?.addEventListener("click", saveAllSettings);
 }
-
 
 function formatUTCtoLocalTime(utcTimeString: string): string {
     if (!utcTimeString) return "Unknown";
@@ -350,13 +441,17 @@ function updateUserInfoUI(userData: any) {
 
                 <div><strong>Reset Time:</strong></div>
                 <div>${
-            userData.data && userData.data.reset_time_utc
-                ? formatUTCtoLocalTime(userData.data.reset_time_utc)
-                : "Unknown. Download to show."
-        }</div>
+                    userData.data && userData.data.reset_time_utc
+                        ? formatUTCtoLocalTime(userData.data.reset_time_utc)
+                        : "Unknown. Download to show."
+                }</div>
 
                 <div><strong>Last Update:</strong></div>
-                <div>${userData.timestamp ? new Date(userData.timestamp).toLocaleString() : "Never"}</div>
+                <div>${
+                    userData.timestamp
+                        ? new Date(userData.timestamp).toLocaleString()
+                        : "Never"
+                }</div>
             </div>
         `;
     }
@@ -383,8 +478,9 @@ function handleBgColorPicker(e: Event): void {
     const target = e.target as HTMLInputElement;
     setBgColor(target.value);
     clearBgColorSelection();
-    if (hexBgColorInput) hexBgColorInput.value = target.value.replace('#', '');
-    if (customBgColorContainer) customBgColorContainer.style.border = `2px solid ${BLUE}`;
+    if (hexBgColorInput) hexBgColorInput.value = target.value.replace("#", "");
+    if (customBgColorContainer)
+        customBgColorContainer.style.border = `2px solid ${BLUE}`;
     saveSettingsDebounced();
 }
 
@@ -422,34 +518,43 @@ function handleAnimationToggle(e: Event): void {
     saveSettingsDebounced();
 }
 
-function handleHexColorInput(e: Event, colorType: 'font' | 'bg' | 'outline'): void {
+function handleHexColorInput(
+    e: Event,
+    colorType: "font" | "bg" | "outline"
+): void {
     const target = e.target as HTMLInputElement;
     let color = target.value;
-    if (!color.startsWith('#')) color = '#' + color;
+    if (!color.startsWith("#")) color = "#" + color;
 
     if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)) {
-
         switch (colorType) {
-            case 'font':
+            case "font":
                 setFontColor(color);
                 clearFontColorSelection();
                 if (customFontColorPicker) customFontColorPicker.value = color;
-                if (hexFontColorInput) hexFontColorInput.value = color.replace('#', '');
-                if (customFontColorContainer) customFontColorContainer.style.border = `2px solid ${BLUE}`;
+                if (hexFontColorInput)
+                    hexFontColorInput.value = color.replace("#", "");
+                if (customFontColorContainer)
+                    customFontColorContainer.style.border = `2px solid ${BLUE}`;
                 break;
-            case 'bg':
+            case "bg":
                 setBgColor(color);
                 clearBgColorSelection();
                 if (customBgColorPicker) customBgColorPicker.value = color;
-                if (hexBgColorInput) hexBgColorInput.value = color.replace('#', '');
-                if (customBgColorContainer) customBgColorContainer.style.border = `2px solid ${BLUE}`;
+                if (hexBgColorInput)
+                    hexBgColorInput.value = color.replace("#", "");
+                if (customBgColorContainer)
+                    customBgColorContainer.style.border = `2px solid ${BLUE}`;
                 break;
-            case 'outline':
+            case "outline":
                 setOutlineColor(color);
                 clearOutlineColorSelection();
-                if (customOutlineColorPicker) customOutlineColorPicker.value = color;
-                if (hexOutlineColorInput) hexOutlineColorInput.value = color.replace('#', '');
-                if (customOutlineColorContainer) customOutlineColorContainer.style.border = `2px solid ${BLUE}`;
+                if (customOutlineColorPicker)
+                    customOutlineColorPicker.value = color;
+                if (hexOutlineColorInput)
+                    hexOutlineColorInput.value = color.replace("#", "");
+                if (customOutlineColorContainer)
+                    customOutlineColorContainer.style.border = `2px solid ${BLUE}`;
                 break;
         }
         saveSettingsDebounced();
@@ -460,8 +565,10 @@ function handleOutlineColorPickerInput(e: Event): void {
     const target = e.target as HTMLInputElement;
     setOutlineColor(target.value);
     clearOutlineColorSelection();
-    if (hexOutlineColorInput) hexOutlineColorInput.value = target.value.replace('#', '');
-    if (customOutlineColorContainer) customOutlineColorContainer.style.border = `2px solid ${BLUE}`;
+    if (hexOutlineColorInput)
+        hexOutlineColorInput.value = target.value.replace("#", "");
+    if (customOutlineColorContainer)
+        customOutlineColorContainer.style.border = `2px solid ${BLUE}`;
     saveSettingsDebounced();
 }
 
@@ -487,9 +594,12 @@ function highlightSelectedFontColor(selectedColor: string): void {
     const colorBtns = fontColorBtns;
 
     let presetSelected = false;
-    colorBtns?.forEach(btn => {
+    colorBtns?.forEach((btn) => {
         const btnElement = btn as HTMLElement;
-        if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
+        if (
+            btnElement.dataset.color?.toUpperCase() ===
+            selectedColor.toUpperCase()
+        ) {
             btnElement.style.border = `2px solid ${BLUE}`;
             presetSelected = true;
         }
@@ -501,7 +611,7 @@ function highlightSelectedFontColor(selectedColor: string): void {
 }
 
 function clearFontColorSelection(): void {
-    fontColorBtns?.forEach(btn => {
+    fontColorBtns?.forEach((btn) => {
         (btn as HTMLElement).style.border = `2px solid ${GREY}`;
     });
     if (customFontColorContainer) {
@@ -519,9 +629,12 @@ function highlightSelectedBgColor(selectedColor: string): void {
     const colorBtns = bgColorBtns;
 
     let presetSelected = false;
-    colorBtns?.forEach(btn => {
+    colorBtns?.forEach((btn) => {
         const btnElement = btn as HTMLElement;
-        if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
+        if (
+            btnElement.dataset.color?.toUpperCase() ===
+            selectedColor.toUpperCase()
+        ) {
             btnElement.style.border = `2px solid ${BLUE}`;
             presetSelected = true;
         }
@@ -533,7 +646,7 @@ function highlightSelectedBgColor(selectedColor: string): void {
 }
 
 function clearBgColorSelection(): void {
-    bgColorBtns?.forEach(btn => {
+    bgColorBtns?.forEach((btn) => {
         (btn as HTMLElement).style.border = `2px solid ${GREY}`;
     });
     if (customBgColorContainer) {
@@ -551,9 +664,12 @@ function highlightSelectedOutlineColor(selectedColor: string): void {
     const colorBtns = outlineColorBtns;
 
     let presetSelected = false;
-    colorBtns?.forEach(btn => {
+    colorBtns?.forEach((btn) => {
         const btnElement = btn as HTMLElement;
-        if (btnElement.dataset.color?.toUpperCase() === selectedColor.toUpperCase()) {
+        if (
+            btnElement.dataset.color?.toUpperCase() ===
+            selectedColor.toUpperCase()
+        ) {
             btnElement.style.border = `2px solid ${BLUE}`;
             presetSelected = true;
         }
@@ -565,7 +681,7 @@ function highlightSelectedOutlineColor(selectedColor: string): void {
 }
 
 function clearOutlineColorSelection(): void {
-    outlineColorBtns?.forEach(btn => {
+    outlineColorBtns?.forEach((btn) => {
         (btn as HTMLElement).style.border = `2px solid ${GREY}`;
     });
     if (customOutlineColorContainer) {
@@ -613,27 +729,50 @@ async function saveAllSettingsInternal(): Promise<void> {
     try {
         await saveSettingsToIndexedDB(settings);
 
-        document.documentElement.style.setProperty('--subtitle-font-color', settings.fontColor);
-        document.documentElement.style.setProperty('--subtitle-outline-color', settings.outlineColor);
-        document.documentElement.style.setProperty('--subtitle-bg-color', settings.bgColor);
+        document.documentElement.style.setProperty(
+            "--subtitle-font-color",
+            settings.fontColor
+        );
+        document.documentElement.style.setProperty(
+            "--subtitle-outline-color",
+            settings.outlineColor
+        );
+        document.documentElement.style.setProperty(
+            "--subtitle-bg-color",
+            settings.bgColor
+        );
         const rgbValues = hexToRgb(settings.bgColor);
         const opacity = settings.bgEnabled ? settings.bgOpacity : 0;
         const bgColorRGBA = `rgba(${rgbValues[0]}, ${rgbValues[1]}, ${rgbValues[2]}, ${opacity})`;
-        document.documentElement.style.setProperty('--subtitle-bg-color-rgba', bgColorRGBA);
-        document.documentElement.style.setProperty('--subtitle-outline-width',
-            settings.outlineEnabled ? '2px' : '0');
-        document.documentElement.style.setProperty('--subtitle-font-size', `${settings.fontSize}px`);
+        document.documentElement.style.setProperty(
+            "--subtitle-bg-color-rgba",
+            bgColorRGBA
+        );
+        document.documentElement.style.setProperty(
+            "--subtitle-outline-width",
+            settings.outlineEnabled ? "2px" : "0"
+        );
+        document.documentElement.style.setProperty(
+            "--subtitle-font-size",
+            `${settings.fontSize}px`
+        );
 
         if (window.activeCues) {
-            const videoPlayer = document.querySelector('video');
-            const subtitleTextElement = document.querySelector("[id^='bilibili-subtitles-text-']");
+            const videoPlayer = document.querySelector("video");
+            const subtitleTextElement = document.querySelector(
+                "[id^='bilibili-subtitles-text-']"
+            );
             if (videoPlayer && subtitleTextElement) {
                 stopSubtitleDisplay();
-                setupSubtitleDisplay(window.activeCues, videoPlayer, subtitleTextElement);
+                setupSubtitleDisplay(
+                    window.activeCues,
+                    videoPlayer,
+                    subtitleTextElement
+                );
             }
         }
     } catch (error) {
-        console.error('Error saving settings:', error);
+        console.error("Error saving settings:", error);
     }
 }
 
@@ -666,7 +805,7 @@ function getSettingsFromUI(): any {
         syncOffset: parseFloat(syncValueInput?.value || "0"),
         animationEnabled: animationToggle?.checked ?? true,
         animationType: animationTypeSelect?.value || "fade",
-        animationDuration: parseFloat(animationDurationSlider?.value || "0.3")
+        animationDuration: parseFloat(animationDurationSlider?.value || "0.3"),
     };
 }
 
@@ -679,19 +818,28 @@ export async function showSettingsModal() {
     updateSettingsUI(await loadSettingsFromIndexedDB());
 
     const container = userInfoContainer;
-    if (container && !/Last Update:\s*Never/i.test(container.textContent || "")) {
-        console.log("[Subtitles Selector] User info already loaded. Skipping update.");
+    if (
+        container &&
+        !/Last Update:\s*Never/i.test(container.textContent || "")
+    ) {
+        console.log(
+            "[Subtitles Selector] User info already loaded. Skipping update."
+        );
     } else {
         console.log("[Subtitles Selector] Loading user info from db");
 
         let userData = await getUserInfoFromDB();
         if (!userData || !userData.data) {
-            console.log("[Subtitles Selector] No user info found, refreshing...");
+            console.log(
+                "[Subtitles Selector] No user info found, refreshing..."
+            );
             await refreshUserInfo(false);
         } else {
-             updateUserInfoUI(userData);
+            updateUserInfoUI(userData);
         }
-        console.log("[Subtitles Selector] Updated user info (or initiated refresh)");
+        console.log(
+            "[Subtitles Selector] Updated user info (or initiated refresh)"
+        );
     }
 
     settingsOverlay.style.display = "flex";
@@ -718,7 +866,8 @@ function updateSettingsUI(settings: any): void {
     }
 
     if (customFontColorPicker) customFontColorPicker.value = currentFontColor;
-    if (hexFontColorInput) hexFontColorInput.value = currentFontColor.replace('#', '');
+    if (hexFontColorInput)
+        hexFontColorInput.value = currentFontColor.replace("#", "");
     highlightSelectedFontColor(currentFontColor);
 
     const bgEnabled = settings?.bgEnabled === true;
@@ -734,13 +883,13 @@ function updateSettingsUI(settings: any): void {
     }
 
     if (customBgColorPicker) customBgColorPicker.value = currentBgColor;
-    if (hexBgColorInput) hexBgColorInput.value = currentBgColor.replace('#', '');
+    if (hexBgColorInput)
+        hexBgColorInput.value = currentBgColor.replace("#", "");
     highlightSelectedBgColor(currentBgColor);
 
     const bgOpacity = settings?.bgOpacity ?? 0.5;
     if (bgOpacitySlider) bgOpacitySlider.value = `${bgOpacity}`;
     if (bgOpacityValue) bgOpacityValue.textContent = `${bgOpacity}`;
-
 
     const outlineEnabled = settings?.outlineEnabled === true;
     if (outlineToggle) outlineToggle.checked = outlineEnabled;
@@ -748,14 +897,20 @@ function updateSettingsUI(settings: any): void {
 
     if (outlineToggleSpan) {
         outlineToggleSpan.style.backgroundColor = outlineEnabled ? BLUE : GREY;
-        const toggleDot = outlineToggleSpan.querySelector("span") as HTMLElement;
+        const toggleDot = outlineToggleSpan.querySelector(
+            "span"
+        ) as HTMLElement;
         if (toggleDot) {
-            toggleDot.style.transform = outlineEnabled ? "translateX(26px)" : "";
+            toggleDot.style.transform = outlineEnabled
+                ? "translateX(26px)"
+                : "";
         }
     }
 
-    if (customOutlineColorPicker) customOutlineColorPicker.value = currentOutlineColor;
-    if (hexOutlineColorInput) hexOutlineColorInput.value = currentOutlineColor.replace('#', '');
+    if (customOutlineColorPicker)
+        customOutlineColorPicker.value = currentOutlineColor;
+    if (hexOutlineColorInput)
+        hexOutlineColorInput.value = currentOutlineColor.replace("#", "");
     if (outlineEnabled) {
         highlightSelectedOutlineColor(currentOutlineColor);
     } else {
@@ -771,19 +926,26 @@ function updateSettingsUI(settings: any): void {
     updateAnimationOptionsVisibility(animationEnabled);
 
     if (animationToggleSpan) {
-        animationToggleSpan.style.backgroundColor = animationEnabled ? BLUE : GREY;
-        const toggleDot = animationToggleSpan.querySelector("span") as HTMLElement;
+        animationToggleSpan.style.backgroundColor = animationEnabled
+            ? BLUE
+            : GREY;
+        const toggleDot = animationToggleSpan.querySelector(
+            "span"
+        ) as HTMLElement;
         if (toggleDot) {
-            toggleDot.style.transform = animationEnabled ? "translateX(26px)" : "";
+            toggleDot.style.transform = animationEnabled
+                ? "translateX(26px)"
+                : "";
         }
     }
 
     const animationType = settings?.animationType || "fade";
     const animationDuration = settings?.animationDuration ?? 0.3;
     if (animationTypeSelect) animationTypeSelect.value = animationType;
-    if (animationDurationSlider) animationDurationSlider.value = `${animationDuration}`;
-    if (animationDurationValue) animationDurationValue.textContent = `${animationDuration}s`;
-
+    if (animationDurationSlider)
+        animationDurationSlider.value = `${animationDuration}`;
+    if (animationDurationValue)
+        animationDurationValue.textContent = `${animationDuration}s`;
 }
 
 async function updateFontSize(change: number): Promise<void> {
@@ -797,10 +959,10 @@ async function updateFontSize(change: number): Promise<void> {
 
     await saveSettingsToIndexedDB({
         ...settings,
-        fontSize: newSize
+        fontSize: newSize,
     });
 
-    document.querySelectorAll(".subtitle").forEach(subtitle => {
+    document.querySelectorAll(".subtitle").forEach((subtitle) => {
         (subtitle as HTMLElement).style.fontSize = `${newSize}px`;
     });
 }

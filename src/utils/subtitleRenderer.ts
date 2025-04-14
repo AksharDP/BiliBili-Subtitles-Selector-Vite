@@ -1,8 +1,8 @@
-import {createDiv} from '../ui/components';
-import {parseSubtitleContent} from './subtitleParser';
-import {setupSubtitleDisplay} from './subtitleDisplay';
-import {loadSettingsFromIndexedDB} from '../db/indexedDB';
-import {BLACK} from '../utils/constants';
+import { createDiv } from "../ui/components";
+import { parseSubtitleContent } from "./subtitleParser";
+import { setupSubtitleDisplay } from "./subtitleDisplay";
+import { loadSettingsFromIndexedDB } from "../db/indexedDB";
+import { BLACK } from "../utils/constants";
 
 declare global {
     interface Window {
@@ -38,7 +38,7 @@ export function createSubtitleOverlay(settings: any): HTMLDivElement {
         z-index: 10;
         `
     );
-    
+
     overlayContainer.classList.add("bilibili-subtitles-overlay");
 
     const subtitleDiv = createDiv(
@@ -51,7 +51,9 @@ export function createSubtitleOverlay(settings: any): HTMLDivElement {
         transform: translateX(-50%);
         ${
             settings.bgEnabled
-                ? `background-color: rgba(${hexToRgb(settings.bgColor || BLACK).join(", ")}, ${settings.bgOpacity}); padding: 5px 10px;`
+                ? `background-color: rgba(${hexToRgb(
+                      settings.bgColor || BLACK
+                  ).join(", ")}, ${settings.bgOpacity}); padding: 5px 10px;`
                 : "padding: 0; background-color: transparent;"
         }
         color: ${settings.fontColor};
@@ -93,11 +95,11 @@ export function createSubtitleOverlay(settings: any): HTMLDivElement {
 }
 
 function getVideoPlayer(): HTMLVideoElement | null {
-    return document.querySelector('video') as HTMLVideoElement;
+    return document.querySelector("video") as HTMLVideoElement;
 }
 
 function getVideoContainer(): Element | null {
-    const videoPlayer = document.querySelector('video');
+    const videoPlayer = document.querySelector("video");
     if (!videoPlayer) return null;
     return videoPlayer ? videoPlayer.closest(".bpx-player-video-wrap") : null;
 }
@@ -120,47 +122,49 @@ export function hexToRgb(hex: string): number[] {
 }
 
 function handleResize() {
-    const subtitleElement = document.querySelector('#bilibili-subtitles-draggable');
+    const subtitleElement = document.querySelector(
+        "#bilibili-subtitles-draggable"
+    );
     if (!subtitleElement) return;
-    
-    const xPercent = subtitleElement.getAttribute('data-x-percent');
-    const yPercent = subtitleElement.getAttribute('data-y-percent');
-    const isCentered = subtitleElement.getAttribute('data-centered') === 'true';
-    
+
+    const xPercent = subtitleElement.getAttribute("data-x-percent");
+    const yPercent = subtitleElement.getAttribute("data-y-percent");
+    const isCentered = subtitleElement.getAttribute("data-centered") === "true";
+
     if (xPercent && yPercent) {
         if (isCentered) {
-            (subtitleElement as HTMLElement).style.left = '50%';
-            (subtitleElement as HTMLElement).style.transform = 'translateX(-50%)';
+            (subtitleElement as HTMLElement).style.left = "50%";
+            (subtitleElement as HTMLElement).style.transform =
+                "translateX(-50%)";
             (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
-            (subtitleElement as HTMLElement).style.bottom = 'auto';
+            (subtitleElement as HTMLElement).style.bottom = "auto";
         } else {
-            (subtitleElement as HTMLElement).style.transform = 'none';
+            (subtitleElement as HTMLElement).style.transform = "none";
             (subtitleElement as HTMLElement).style.left = `${xPercent}%`;
             (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
-            (subtitleElement as HTMLElement).style.bottom = 'auto';
+            (subtitleElement as HTMLElement).style.bottom = "auto";
         }
     } else {
-        (subtitleElement as HTMLElement).style.left = '50%';
-        (subtitleElement as HTMLElement).style.transform = 'translateX(-50%)';
-        (subtitleElement as HTMLElement).style.bottom = '10%';
-        (subtitleElement as HTMLElement).style.top = 'auto';
-        subtitleElement.setAttribute('data-centered', 'true');
+        (subtitleElement as HTMLElement).style.left = "50%";
+        (subtitleElement as HTMLElement).style.transform = "translateX(-50%)";
+        (subtitleElement as HTMLElement).style.bottom = "10%";
+        (subtitleElement as HTMLElement).style.top = "auto";
+        subtitleElement.setAttribute("data-centered", "true");
     }
 }
 
 export function setupSubtitleResizeHandler(): void {
-    
     const resizeObserver = new ResizeObserver(() => {
         handleResize();
     });
-    
+
     const videoContainer = getVideoContainer();
     if (videoContainer) {
         resizeObserver.observe(videoContainer);
     }
-    
-    window.addEventListener('resize', handleResize);
-    
+
+    window.addEventListener("resize", handleResize);
+
     window.subtitleResizeObserver = resizeObserver;
 }
 
@@ -170,42 +174,48 @@ export function setupSubtitleDrag(subtitleElement: Element): void {
     let initialElementX: number, initialElementY: number;
     let elementWidth: number, elementHeight: number;
     let isCentered = true;
-    
-    subtitleElement.setAttribute("style", subtitleElement.getAttribute("style") + "transition: none;");
+
+    subtitleElement.setAttribute(
+        "style",
+        subtitleElement.getAttribute("style") + "transition: none;"
+    );
     subtitleElement.setAttribute("data-centered", "true");
-    
+
     subtitleElement.addEventListener("click", (e) => {
         e.stopPropagation();
     });
-    
+
     subtitleElement.addEventListener("mousedown", (e: Event) => {
         const mouseEvent = e as MouseEvent;
         if (mouseEvent.button !== 0) return;
-        
+
         mouseEvent.stopPropagation();
-        
+
         const videoContainer = getVideoContainer();
         if (!videoContainer) {
             console.error("Video container not found");
-            return
-        };
-        
+            return;
+        }
+
         const videoRect = videoContainer.getBoundingClientRect();
-        
+
         initialMouseX = mouseEvent.clientX;
         initialMouseY = mouseEvent.clientY;
-        
+
         const elementRect = subtitleElement.getBoundingClientRect();
         elementWidth = elementRect.width;
         elementHeight = elementRect.height;
-        
+
         initialElementX = elementRect.left - videoRect.left;
         initialElementY = elementRect.top - videoRect.top;
-        
+
         isDragging = true;
-        
-        subtitleElement.setAttribute("style", subtitleElement.getAttribute("style") + "transition: none;");
-        
+
+        subtitleElement.setAttribute(
+            "style",
+            subtitleElement.getAttribute("style") + "transition: none;"
+        );
+
         if (window.subtitleUpdateAnimationFrame) {
             cancelAnimationFrame(window.subtitleUpdateAnimationFrame);
             window.subtitleUpdateAnimationFrame = null;
@@ -216,60 +226,67 @@ export function setupSubtitleDrag(subtitleElement: Element): void {
 
     document.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
-    
+
         const currentMouseX = e.clientX;
         const currentMouseY = e.clientY;
-    
+
         const deltaX = currentMouseX - initialMouseX;
         const deltaY = currentMouseY - initialMouseY;
-    
+
         let newX = initialElementX + deltaX;
         let newY = initialElementY + deltaY;
-    
+
         const videoPlayer = getVideoPlayer();
         if (videoPlayer) {
             const videoRect = videoPlayer.getBoundingClientRect();
             const subtitleTextElement = getSubtitleTextElement(subtitleElement);
-    
+
             const centerX = videoRect.width / 2 - elementWidth / 2;
             const snapThreshold = 20;
-    
+
             const distanceFromCenter = Math.abs(newX - centerX);
-    
+
             if (distanceFromCenter < snapThreshold) {
                 newX = centerX;
                 isCentered = true;
                 subtitleElement.setAttribute("data-centered", "true");
-                
+
                 if (subtitleTextElement) {
-                    subtitleTextElement.setAttribute("style", subtitleTextElement.getAttribute("style") + "text-align: center;");
+                    subtitleTextElement.setAttribute(
+                        "style",
+                        subtitleTextElement.getAttribute("style") +
+                            "text-align: center;"
+                    );
                 }
             } else {
                 isCentered = false;
                 subtitleElement.setAttribute("data-centered", "false");
             }
-    
+
             if (newX < 0) newX = 0;
-            if (newX + elementWidth > videoRect.width) newX = videoRect.width - elementWidth;
+            if (newX + elementWidth > videoRect.width)
+                newX = videoRect.width - elementWidth;
             if (newY < 0) newY = 0;
-            if (newY + elementHeight > videoRect.height) newY = videoRect.height - elementHeight;
-            
+            if (newY + elementHeight > videoRect.height)
+                newY = videoRect.height - elementHeight;
+
             const xPercent = (newX / videoRect.width) * 100;
             const yPercent = (newY / videoRect.height) * 100;
-            
-            subtitleElement.setAttribute('data-x-percent', xPercent.toString());
-            subtitleElement.setAttribute('data-y-percent', yPercent.toString());
-            
+
+            subtitleElement.setAttribute("data-x-percent", xPercent.toString());
+            subtitleElement.setAttribute("data-y-percent", yPercent.toString());
+
             if (isCentered) {
-                (subtitleElement as HTMLElement).style.left = '50%';
-                (subtitleElement as HTMLElement).style.transform = 'translateX(-50%)';
+                (subtitleElement as HTMLElement).style.left = "50%";
+                (subtitleElement as HTMLElement).style.transform =
+                    "translateX(-50%)";
                 (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
-                (subtitleElement as HTMLElement).style.bottom = 'auto';
+                (subtitleElement as HTMLElement).style.bottom = "auto";
             } else {
-                (subtitleElement as HTMLElement).style.transform = 'none';
+                (subtitleElement as HTMLElement).style.transform = "none";
                 (subtitleElement as HTMLElement).style.left = `${xPercent}%`;
                 (subtitleElement as HTMLElement).style.top = `${yPercent}%`;
-                (subtitleElement as HTMLElement).style.bottom = 'auto';
+                (subtitleElement as HTMLElement).style.bottom = "auto";
             }
         }
     });
@@ -283,7 +300,11 @@ export function setupSubtitleDrag(subtitleElement: Element): void {
         if (videoPlayer) {
             const subtitleTextElement = getSubtitleTextElement(subtitleElement);
             if (subtitleTextElement && window.activeCues) {
-                setupSubtitleDisplay(window.activeCues, videoPlayer, subtitleTextElement);
+                setupSubtitleDisplay(
+                    window.activeCues,
+                    videoPlayer,
+                    subtitleTextElement
+                );
             }
         }
 
@@ -297,9 +318,14 @@ export function setupSubtitleDrag(subtitleElement: Element): void {
 
             const videoPlayer = getVideoPlayer();
             if (videoPlayer) {
-                const subtitleTextElement = getSubtitleTextElement(subtitleElement);
+                const subtitleTextElement =
+                    getSubtitleTextElement(subtitleElement);
                 if (subtitleTextElement && window.activeCues) {
-                    setupSubtitleDisplay(window.activeCues, videoPlayer, subtitleTextElement);
+                    setupSubtitleDisplay(
+                        window.activeCues,
+                        videoPlayer,
+                        subtitleTextElement
+                    );
                 }
             }
         }
@@ -311,28 +337,36 @@ export function clearExistingSubtitles(videoPlayer: HTMLVideoElement): void {
         cancelAnimationFrame(window.subtitleUpdateAnimationFrame);
         window.subtitleUpdateAnimationFrame = null;
     }
-    
+
     if (window.subtitleResizeObserver) {
         window.subtitleResizeObserver.disconnect();
         window.subtitleResizeObserver = null;
     }
 
-    window.removeEventListener('resize', handleResize);
+    window.removeEventListener("resize", handleResize);
 
     if (videoPlayer) {
-        Array.from(videoPlayer.querySelectorAll("track")).forEach(track => track.remove());
+        Array.from(videoPlayer.querySelectorAll("track")).forEach((track) =>
+            track.remove()
+        );
     }
 
-    document.querySelectorAll(".bilibili-subtitles-overlay").forEach(el => el.remove());
+    document
+        .querySelectorAll(".bilibili-subtitles-overlay")
+        .forEach((el) => el.remove());
 
-    document.querySelectorAll("[id^='bilibili-subtitles-']").forEach(el => el.remove());
+    document
+        .querySelectorAll("[id^='bilibili-subtitles-']")
+        .forEach((el) => el.remove());
 
     window.activeCues = undefined;
-    
+
     clearElementCache();
 }
 
-export async function applySubtitleToVideo(subtitleContent: string): Promise<boolean> {
+export async function applySubtitleToVideo(
+    subtitleContent: string
+): Promise<boolean> {
     try {
         const videoContainer = getVideoContainer();
         if (!videoContainer) {
@@ -350,13 +384,16 @@ export async function applySubtitleToVideo(subtitleContent: string): Promise<boo
 
         videoContainer.appendChild(overlayContainer);
         setupSubtitleDrag(subtitleElement);
-        
+
         setupSubtitleResizeHandler();
 
         window.subtitleSyncOffset = settings.syncOffset || 0;
-        
+
         return await parseSubtitleContent(
-            subtitleContent, videoContainer.querySelector("video") as HTMLVideoElement, subtitleTextElement);
+            subtitleContent,
+            videoContainer.querySelector("video") as HTMLVideoElement,
+            subtitleTextElement
+        );
     } catch (error) {
         console.error("Error applying subtitle to video:", error);
         return false;

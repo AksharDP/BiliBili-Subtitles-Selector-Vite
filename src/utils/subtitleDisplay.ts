@@ -1,18 +1,26 @@
-import { getAnimationDuration, getAnimationType, getAnimationEnabled } from "../db/indexedDB";
+import {
+    getAnimationDuration,
+    getAnimationType,
+    getAnimationEnabled,
+} from "../db/indexedDB";
 
 let cachedAnimationDuration: number | null = null;
 let styleElement: HTMLStyleElement | null = null;
 let animationFrameId: number | null = null;
 let lastCueId: string | null = null;
 
-export async function createSubtitleAnimationStyles(forceUpdate = false): Promise<HTMLStyleElement> {
+export async function createSubtitleAnimationStyles(
+    forceUpdate = false
+): Promise<HTMLStyleElement> {
     if (cachedAnimationDuration === null || forceUpdate) {
         cachedAnimationDuration = await getAnimationDuration();
     }
-    
+
     if (!styleElement) {
-        styleElement = document.getElementById("subtitle-animation-styles") as HTMLStyleElement;
-        
+        styleElement = document.getElementById(
+            "subtitle-animation-styles"
+        ) as HTMLStyleElement;
+
         if (!styleElement) {
             styleElement = document.createElement("style");
             styleElement.id = "subtitle-animation-styles";
@@ -40,82 +48,85 @@ export async function createSubtitleAnimationStyles(forceUpdate = false): Promis
             animation: subtitleZoomIn ${cachedAnimationDuration}s ease-out;
         }
     `;
-    
+
     return styleElement;
 }
 
 export async function setupSubtitleDisplay(
-    subtitleCues: any[], 
-    videoPlayer: HTMLVideoElement, 
+    subtitleCues: any[],
+    videoPlayer: HTMLVideoElement,
     subtitleTextElement: Element
 ): Promise<() => void> {
     stopSubtitleDisplay();
-    
+
     await createSubtitleAnimationStyles();
-    
+
     const animationEnabled = await getAnimationEnabled();
-    const animationType = await getAnimationType() || 'fade';
+    const animationType = (await getAnimationType()) || "fade";
     let isPlaying = !videoPlayer.paused;
-    
+
     const onPlay = () => {
         isPlaying = true;
         if (!animationFrameId) {
             animationFrameId = requestAnimationFrame(updateSubtitles);
         }
     };
-    
+
     const onPause = () => {
         isPlaying = false;
     };
-    
-    videoPlayer.addEventListener('play', onPlay);
-    videoPlayer.addEventListener('playing', onPlay);
-    videoPlayer.addEventListener('pause', onPause);
-    videoPlayer.addEventListener('seeking', updateSubtitles);
+
+    videoPlayer.addEventListener("play", onPlay);
+    videoPlayer.addEventListener("playing", onPlay);
+    videoPlayer.addEventListener("pause", onPause);
+    videoPlayer.addEventListener("seeking", updateSubtitles);
 
     function updateSubtitles() {
-        const currentTime = videoPlayer.currentTime - (window.subtitleSyncOffset || 0);
-        
+        const currentTime =
+            videoPlayer.currentTime - (window.subtitleSyncOffset || 0);
+
         const activeCue = subtitleCues.find(
             (cue) => currentTime >= cue.startTime && currentTime < cue.endTime
         );
-        
-        const activeCueId = activeCue ? `${activeCue.startTime}-${activeCue.endTime}` : null;
-        
+
+        const activeCueId = activeCue
+            ? `${activeCue.startTime}-${activeCue.endTime}`
+            : null;
+
         if (activeCueId !== lastCueId) {
             lastCueId = activeCueId;
-            
+
             if (activeCue) {
                 subtitleTextElement.innerHTML = activeCue.text;
-                
+
                 if (animationEnabled) {
                     subtitleTextElement.className = `subtitle-animation-${animationType}`;
                 } else {
-                    subtitleTextElement.className = '';
+                    subtitleTextElement.className = "";
                 }
             } else {
-                subtitleTextElement.innerHTML = '';
-                subtitleTextElement.className = '';
+                subtitleTextElement.innerHTML = "";
+                subtitleTextElement.className = "";
             }
         }
-        
+
         if (isPlaying) {
             animationFrameId = requestAnimationFrame(updateSubtitles);
         }
     }
-    
+
     if (isPlaying) {
         animationFrameId = requestAnimationFrame(updateSubtitles);
     } else {
         updateSubtitles();
     }
-    
+
     return function cleanup() {
         stopSubtitleDisplay();
-        videoPlayer.removeEventListener('play', onPlay);
-        videoPlayer.removeEventListener('playing', onPlay);
-        videoPlayer.removeEventListener('pause', onPause);
-        videoPlayer.removeEventListener('seeking', updateSubtitles);
+        videoPlayer.removeEventListener("play", onPlay);
+        videoPlayer.removeEventListener("playing", onPlay);
+        videoPlayer.removeEventListener("pause", onPause);
+        videoPlayer.removeEventListener("seeking", updateSubtitles);
     };
 }
 
