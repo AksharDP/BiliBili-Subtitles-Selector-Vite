@@ -1,0 +1,1 @@
+export default "<div>Mock HTML Content</div>";
