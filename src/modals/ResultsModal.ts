@@ -290,7 +290,7 @@ async function createResultItem(
     return item;
 }
 
-async function checkCacheStatus(
+export async function checkCacheStatus(
     subtitleId: string,
     itemElement: HTMLElement
 ): Promise<void> {
